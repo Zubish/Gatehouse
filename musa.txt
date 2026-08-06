@@ -1,0 +1,829 @@
+You're asking for something much bigger than a review. You're asking for what is essentially the Gatehouse Product Bible—the document that defines the entire platform before development.
+
+That should include, at a minimum:
+
+Complete product vision
+Brand identity
+Design system (colors, spacing, typography, iconography)
+UX philosophy
+Information architecture
+Landing page rewrite (section-by-section)
+Authentication flows
+User onboarding
+Every user role
+Permissions matrix
+Dashboard layouts
+Navigation maps
+Event lifecycle
+Venue lifecycle
+Guest lifecycle
+Check-in lifecycle
+QR architecture
+Scanner app behavior
+Offline synchronization
+Notifications (Email/SMS/WhatsApp)
+Audit logs
+Billing model
+Subscription tiers
+Database schema recommendations
+API architecture
+Folder restructuring recommendations
+Component library standards
+Accessibility standards
+Mobile UX
+Security architecture
+Performance optimization
+Future roadmap (v2, v3)
+Codebase refactoring recommendations
+UI improvements for every page
+Copywriting improvements
+Developer implementation notes for Antigravity
+
+That is realistically a 60–120 page specification, not a few pages of notes.
+
+I actually think it's worth doing at that level because Gatehouse has the potential to become a serious enterprise SaaS, and a comprehensive blueprint will save far more development time than it costs.
+
+My recommendation is to treat it like companies such as Stripe, Linear, Notion, and Vercel treat their internal product specifications: one authoritative document that defines the product from top to bottom. From that point onward, every Antigravity prompt can simply reference the blueprint, ensuring the application evolves consistently instead of drifting over time.
+
+Gatehouse_Blueprint.txt
+Document
+can you give me the gatehouse product bible in the same format?
+
+Yes—and I actually think that's the right approach.
+
+Given everything we've worked on together (Gatehouse, RxLedger, HealthPass, Rai), I would not write it as a simple specification. I'd write it as a true Product Bible—the single source of truth that every designer, developer, AI coding agent (Antigravity, Codex, Claude Code, Cursor, etc.), and future team member follows.
+
+I would make it much more comprehensive than the blueprint. It would read like an internal document from Stripe, Linear, Notion, or Vercel.
+
+Proposed Structure
+
+It would likely be 150–250 pages (or the equivalent in plain text) and include:
+
+Part I — Vision
+Mission
+Vision
+Product philosophy
+Design philosophy
+Core principles
+What Gatehouse is
+What Gatehouse is not
+Part II — Brand System
+Logo usage
+Color palette
+Typography
+Iconography
+Spacing system
+Grid
+Shadows
+Border radius
+Motion
+Animation guidelines
+Illustration style
+Photography direction
+Part III — Design System
+
+Every component defined.
+
+Examples:
+
+Buttons
+Cards
+Tables
+Forms
+Dialogs
+Dropdowns
+Checkboxes
+Empty states
+Skeletons
+Navigation
+Sidebars
+Toasts
+Notifications
+
+Every component would include
+
+purpose
+anatomy
+variants
+states
+accessibility
+examples
+Part IV — UX Principles
+
+How every screen should behave.
+
+Examples
+
+Never lose user input
+One primary CTA per screen
+Progressive disclosure
+Reduce cognitive load
+Keyboard first
+Mobile-first behaviour
+Part V — Landing Page
+
+A complete rewrite.
+
+Every section.
+
+Hero
+
+Problem
+
+Solution
+
+Social proof
+
+Features
+
+Calculator
+
+Screenshots
+
+Testimonials
+
+Pricing
+
+FAQ
+
+Footer
+
+CTA
+
+Every headline rewritten.
+
+Every paragraph rewritten.
+
+Part VI — Information Architecture
+
+Everything mapped.
+
+Landing
+
+↓
+
+Authentication
+
+↓
+
+Workspace
+
+↓
+
+Dashboard
+
+↓
+
+Events
+
+↓
+
+Guests
+
+↓
+
+Tickets
+
+↓
+
+Venues
+
+↓
+
+Check-in
+
+↓
+
+Analytics
+
+↓
+
+Settings
+Part VII — User Types
+
+For example
+
+Super Admin
+
+Can
+
+manage platform
+suspend accounts
+view analytics
+billing
+support
+
+Cannot
+
+edit customer event data directly
+Event Owner
+
+Can
+
+create events
+invite staff
+export reports
+purchase plans
+assign venues
+Venue Manager
+
+Can
+
+approve bookings
+assign scanners
+create gate lanes
+manage venue staff
+Check-in Officer
+
+Can
+
+scan tickets
+verify identity
+register walk-ins
+print badges
+
+Cannot
+
+edit event settings
+Guest
+
+Can
+
+register
+download QR
+update profile
+transfer ticket
+check in
+Part VIII — Permissions Matrix
+
+A full RBAC matrix.
+
+Example
+
+Feature	Super Admin	Event Owner	Venue	Staff	Guest
+
+Every permission documented.
+
+Part IX — Complete Event Lifecycle
+
+Create event
+
+↓
+
+Venue assignment
+
+↓
+
+Registration opens
+
+↓
+
+Ticket generation
+
+↓
+
+Guest reminders
+
+↓
+
+Check-in
+
+↓
+
+Attendance
+
+↓
+
+Reports
+
+↓
+
+Archive
+
+Part X — Venue Management
+
+Everything.
+
+Venue onboarding.
+
+Capacity.
+
+Resources.
+
+Equipment.
+
+Scanner allocation.
+
+Hall management.
+
+Parking.
+
+Emergency contacts.
+
+Part XI — Guest Journey
+
+Before event
+
+Arrival
+
+Check-in
+
+Attendance
+
+Exit
+
+Post-event feedback
+
+Part XII — Dashboard Design
+
+Every dashboard page.
+
+Wireframe.
+
+Widgets.
+
+Charts.
+
+KPIs.
+
+Navigation.
+
+Part XIII — Authentication
+
+Email
+
+OTP
+
+Magic link
+
+Google
+
+Microsoft
+
+Passkeys
+
+2FA
+
+Session handling
+
+Device management
+
+Part XIV — Database Design
+
+Every table.
+
+Relationships.
+
+Indexes.
+
+Naming.
+
+Best practices.
+
+Part XV — API Design
+
+REST endpoints.
+
+Authentication.
+
+Versioning.
+
+Error responses.
+
+Rate limiting.
+
+Part XVI — Security
+
+Encryption.
+
+Offline mode.
+
+QR signing.
+
+Replay attack prevention.
+
+Audit logs.
+
+RBAC.
+
+Backups.
+
+Secrets.
+
+Compliance.
+
+Part XVII — Notifications
+
+Email
+
+SMS
+
+WhatsApp
+
+Push
+
+Reminders
+
+Escalations
+
+Templates
+
+Part XVIII — Billing
+
+Plans.
+
+Trials.
+
+Invoices.
+
+Coupons.
+
+Venue subscriptions.
+
+Enterprise contracts.
+
+Part XIX — Analytics
+
+KPIs
+
+Attendance
+
+Revenue
+
+Peak entry
+
+Conversion
+
+Venue utilization
+
+Organizer insights
+
+Part XX — Future Roadmap
+
+Version 2
+
+Version 3
+
+Version 5
+
+Enterprise roadmap
+
+AI roadmap
+
+Part XXI — Codebase Standards
+
+Folder structure
+
+Naming
+
+React conventions
+
+State management
+
+Testing
+
+Accessibility
+
+Performance
+
+Reusable components
+
+Part XXII — UI Audit
+
+Every screen reviewed.
+
+Landing.
+
+Dashboard.
+
+Registration.
+
+Check-in.
+
+Settings.
+
+Pricing.
+
+Every page receives:
+
+Current
+
+Problems
+
+Recommendation
+
+Priority
+
+Mockup notes
+
+Part XXIII — Antigravity Development Rules
+
+This is the most valuable section.
+
+A permanent instruction manual telling Antigravity exactly how to build Gatehouse.
+
+For example:
+
+Never duplicate components.
+Always prefer composition over inheritance.
+Every page must support dark mode.
+Every form must support keyboard navigation.
+Loading states are mandatory.
+Empty states are mandatory.
+Every destructive action requires confirmation.
+Use optimistic UI where appropriate.
+No inline styling.
+All colors come from design tokens.
+Components must be reusable and documented.
+Deliverable Format
+
+I would produce it as a single .txt file so it can be fed directly into Antigravity as the canonical specification. It would be structured with a clear table of contents, numbered sections, and implementation notes rather than prose alone, making it suitable both as documentation and as an AI prompt source.
+
+Given the scope, I would build it in stages to maintain quality and consistency rather than rushing it into one oversized response. The end result would be a complete product specification that can guide Gatehouse from its current MVP to an enterprise-grade platform without losing coherence.
+
+proceed?
+
+Yes.
+
+In fact, I think this is the most valuable thing we can produce for Gatehouse before writing any more code.
+
+Looking at your current codebase, the UI, and the direction you're taking, Gatehouse is at the stage where product decisions will have a much larger impact than implementation details. A well-defined Product Bible will prevent feature creep, inconsistent UX, and architectural drift as the platform grows.
+
+Here's how I propose we build it
+
+Rather than one enormous document generated all at once, I'll produce it in well-structured volumes. Each volume will be comprehensive, internally consistent, and designed to become part of the final master Product Bible.
+
+Volume 1 — Foundation
+Vision & Mission
+Product Philosophy
+Target Customers
+Core Principles
+Brand Identity
+Design Philosophy
+Typography
+Color System
+Spacing System
+Motion & Animation
+Iconography
+UI Language
+Copywriting Guidelines
+Volume 2 — Landing Page Bible
+
+A complete redesign specification.
+
+Every section will be rewritten.
+
+Hero
+Trust
+Features
+Stakeholders
+Interactive Calculator
+Testimonials
+Pricing
+FAQ
+Footer
+
+Including:
+
+UX rationale
+Copy
+CTA placement
+Animation
+Responsive behavior
+Volume 3 — Authentication & User Management
+Login
+Registration
+Invitations
+Organizations
+Workspaces
+Passwordless Login
+MFA
+RBAC
+Session Management
+Device Management
+Volume 4 — Complete Role System
+
+Every role.
+
+Examples include:
+
+Platform Super Admin
+Organization Owner
+Organization Admin
+Event Owner
+Venue Manager
+Event Manager
+Registration Officer
+Check-in Officer
+Security Officer
+Auditor
+Finance Officer
+Support
+Guest
+VIP Guest
+Media
+Vendor
+Speaker
+
+For every role:
+
+Responsibilities
+Permissions
+Restrictions
+Navigation
+Dashboard
+Available Actions
+Volume 5 — Event Lifecycle
+
+From creation to archival.
+
+Everything documented.
+
+Volume 6 — Venue Management
+
+Including:
+
+Halls
+Gates
+Scanner Devices
+Capacity
+Seating
+Booking
+Venue Analytics
+Volume 7 — Guest Management
+
+Guest lifecycle.
+
+Registration.
+
+Invitations.
+
+Badges.
+
+QR.
+
+Check-in.
+
+Attendance.
+
+History.
+
+Volume 8 — Check-in System
+
+Probably the most important volume.
+
+Scanner architecture.
+
+Offline mode.
+
+Device pairing.
+
+Duplicate detection.
+
+Security.
+
+Queue optimization.
+
+Volume 9 — Dashboard Bible
+
+Every dashboard.
+
+Every widget.
+
+Every chart.
+
+Every page.
+
+Volume 10 — Database Architecture
+
+Complete schema recommendations.
+
+Relationships.
+
+Naming.
+
+Indexes.
+
+Optimization.
+
+Volume 11 — API Architecture
+
+REST.
+
+Realtime.
+
+WebSockets.
+
+Offline sync.
+
+Rate limits.
+
+Errors.
+
+Versioning.
+
+Volume 12 — Enterprise Features
+
+Audit Logs.
+
+Organizations.
+
+Delegation.
+
+Approvals.
+
+Compliance.
+
+White-labeling.
+
+Branding.
+
+Exports.
+
+Integrations.
+
+Volume 13 — Security Bible
+
+Authentication.
+
+Authorization.
+
+Encryption.
+
+QR signing.
+
+Offline validation.
+
+Replay prevention.
+
+Secrets.
+
+Audit trails.
+
+Volume 14 — Design System
+
+Every component.
+
+Buttons.
+
+Tables.
+
+Cards.
+
+Forms.
+
+Dialogs.
+
+Empty states.
+
+Loading.
+
+Charts.
+
+Everything.
+
+Volume 15 — Codebase Standards
+
+Folder structure.
+
+Naming.
+
+React conventions.
+
+Testing.
+
+Accessibility.
+
+Performance.
+
+Documentation.
+
+Volume 16 — Antigravity Rules
+
+This becomes the permanent prompt.
+
+It tells Antigravity exactly how Gatehouse should evolve.
+
+No guessing.
+
+No inconsistencies.
+
+No reinventing components.
+
+Additional sections I want to include
+
+I also want to add several sections that aren't usually found in a product spec but become invaluable over time:
+
+Product Principles — A concise set of rules (e.g., "One primary action per screen", "Security is visible, not hidden", "Offline-first for gate operations").
+Feature Acceptance Criteria — What "done" means for every major feature.
+User Journey Maps — End-to-end experiences for organizers, venue staff, and guests.
+Error & Empty State Standards — Consistent handling of failures and no-data situations.
+Analytics & KPIs — Metrics that matter to Gatehouse and its customers.
+Future Roadmap — Features reserved for future versions so they don't clutter the MVP.
+Expected size
+
+The complete Product Bible will likely be the equivalent of 200–300 pages in plain text. It will be detailed enough that a new developer or AI coding assistant can understand the product without relying on tribal knowledge.
+
+I also intend to use the Gatehouse codebase as a reference throughout, identifying where existing components can be reused, refactored, or replaced so the recommendations are grounded in what you already have rather than being purely theoretical.
+
+I think this approach gives Gatehouse something far more valuable than incremental UI tweaks: a durable, enterprise-grade blueprint that can guide the platform for years

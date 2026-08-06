@@ -1,12 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'GATEHOUSE-PRODUCTION-JWT-SECRET-KEY-2026';
 
 app.use(cors());
 app.use(express.json());
@@ -44,6 +47,137 @@ function genCode(): string {
   return 'EVT-' + Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
+// ---------------- AUTHENTICATION ENDPOINTS ----------------
+
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, phone, password, role } = req.body;
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Name, email, and password are required.' });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (existing) {
+      return res.status(400).json({ error: 'An account with this email already exists.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userRole = role === 'centre' ? 'centre' : 'organizer';
+
+    const newUser = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        phone: phone || '08000000000',
+        password: hashedPassword,
+        role: userRole,
+      },
+    });
+
+    if (userRole === 'centre') {
+      await prisma.eventCentre.create({
+        data: {
+          userId: newUser.id,
+          name: `${newUser.name} Event Facility`,
+          description: 'Premium multipurpose event facility.',
+          address: 'Victoria Island',
+          city: 'Lagos',
+          capacityMin: 200,
+          capacityMax: 2000,
+          priceRange: '₦1,500,000 / day',
+          photos: ['https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'],
+          amenities: ['VIP Lounge', 'Air Conditioning', 'High Security', 'Parking'],
+          status: 'approved',
+        },
+      });
+    }
+
+    const token = jwt.sign({ userId: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, {
+      expiresIn: '7d',
+    });
+
+    res.status(201).json({
+      token,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    if (user.password) {
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) {
+        return res.status(401).json({ error: 'Invalid email or password.' });
+      }
+    }
+
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+      expiresIn: '7d',
+    });
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token required.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (err: any) {
+    res.status(401).json({ error: 'Invalid or expired authentication token.' });
+  }
+});
+
 // ---------------- API ENDPOINTS ----------------
 
 app.get('/api/health', (req, res) => {
@@ -70,13 +204,18 @@ app.get('/api/events', async (req, res) => {
 
 app.post('/api/events', async (req, res) => {
   try {
-    const { name, date, startTime, capacity, eventCentreId } = req.body;
+    const { name, date, startTime, capacity, eventCentreId, organizerId } = req.body;
     const token = 'EVT-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-    const org = await prisma.user.findFirst({ where: { role: 'organizer' } });
+
+    let orgId = organizerId;
+    if (!orgId) {
+      const org = await prisma.user.findFirst({ where: { role: 'organizer' } });
+      orgId = org?.id || 'u_org_1';
+    }
 
     const newEvent = await prisma.event.create({
       data: {
-        organizerId: org?.id || 'u_org_1',
+        organizerId: orgId,
         eventCentreId: eventCentreId || null,
         name: name.trim(),
         date: date.trim(),
@@ -104,14 +243,21 @@ app.get('/api/bookings', async (req, res) => {
 
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { eventCentreId, eventName, requestedDate, guestEstimate, message } = req.body;
-    const org = await prisma.user.findFirst({ where: { role: 'organizer' } });
+    const { eventCentreId, eventName, requestedDate, guestEstimate, message, organizerId, organizerName } = req.body;
+
+    let orgId = organizerId;
+    let orgName = organizerName;
+    if (!orgId) {
+      const org = await prisma.user.findFirst({ where: { role: 'organizer' } });
+      orgId = org?.id || 'u_org_1';
+      orgName = org?.name || 'Chidinma Okoro (Xquisit Events)';
+    }
 
     const newBooking = await prisma.booking.create({
       data: {
         eventCentreId,
-        organizerId: org?.id || 'u_org_1',
-        organizerName: org?.name || 'Chidinma Okoro (Xquisit Events)',
+        organizerId: orgId,
+        organizerName: orgName || 'Organizer',
         eventName,
         requestedDate,
         guestEstimate: Number(guestEstimate),
@@ -187,6 +333,7 @@ app.get('/api/guests', async (req, res) => {
 app.post('/api/guests', async (req, res) => {
   try {
     const { eventId, name, phone, email, category, source } = req.body;
+
     const eventObj = await prisma.event.findUnique({ where: { id: eventId } });
     if (!eventObj) return res.status(404).json({ error: 'Event not found' });
 

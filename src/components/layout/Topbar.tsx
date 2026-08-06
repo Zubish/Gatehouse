@@ -4,6 +4,8 @@ import type { ViewRoute } from '../../types';
 
 export const Topbar: React.FC = () => {
   const { 
+    currentUser,
+    logoutUser,
     userRole, 
     setUserRole, 
     guests, 
@@ -15,7 +17,6 @@ export const Topbar: React.FC = () => {
   } = useGatehouse();
 
   const isPublicPage = activeTab === 'landing' || activeTab === 'login' || activeTab === 'register';
-
   const totalCount = guests.length;
 
   const appTabs: { id: ViewRoute; label: string; count?: number }[] = [
@@ -61,18 +62,34 @@ export const Topbar: React.FC = () => {
 
           {/* Public Actions */}
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveTab('login')}
-              className="text-xs font-mono font-semibold px-4 py-2 text-[#EDEFF3] hover:text-[#3ED98A] transition-colors"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className="btn btn-go text-xs font-mono font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#3ED98A]/20 hover:scale-105 transition-all"
-            >
-              Launch Control Room &rarr;
-            </button>
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono text-[#3ED98A]">
+                  Hi, {currentUser.name.split(' ')[0]} ({currentUser.role})
+                </span>
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className="btn btn-go text-xs font-mono font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#3ED98A]/20 hover:scale-105 transition-all"
+                >
+                  Control Room &rarr;
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setActiveTab('login')}
+                  className="text-xs font-mono font-semibold px-4 py-2 text-[#EDEFF3] hover:text-[#3ED98A] transition-colors"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className="btn btn-go text-xs font-mono font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#3ED98A]/20 hover:scale-105 transition-all"
+                >
+                  Launch Control Room &rarr;
+                </button>
+              </>
+            )}
           </div>
 
         </div>
@@ -100,6 +117,14 @@ export const Topbar: React.FC = () => {
         {/* Role Switcher & Active Event Picker */}
         <div className="flex items-center gap-3">
           
+          {/* User Profile Badge */}
+          {currentUser && (
+            <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-[#151A22] border border-[#262D38] text-xs font-mono">
+              <span className="w-2 h-2 rounded-full bg-[#3ED98A]" />
+              <span className="font-bold text-[#EDEFF3]">{currentUser.name}</span>
+            </div>
+          )}
+
           {/* Active Event Dropdown */}
           <select
             value={activeEventId}
@@ -137,13 +162,22 @@ export const Topbar: React.FC = () => {
             </button>
           </div>
 
-          {/* Exit / Public Website Button */}
-          <button
-            onClick={() => setActiveTab('landing')}
-            className="btn btn-ghost text-xs px-3 py-1 font-mono text-[#8B93A3] hover:text-white"
-          >
-            Exit Control Room
-          </button>
+          {/* Sign Out / Exit Button */}
+          {currentUser ? (
+            <button
+              onClick={logoutUser}
+              className="btn btn-ghost text-xs px-3 py-1 font-mono text-[#E5555C] border-[#E5555C]/30 hover:bg-[#331B1D]"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <button
+              onClick={() => setActiveTab('landing')}
+              className="btn btn-ghost text-xs px-3 py-1 font-mono text-[#8B93A3] hover:text-white"
+            >
+              Exit Control Room
+            </button>
+          )}
 
         </div>
       </div>

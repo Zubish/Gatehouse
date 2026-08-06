@@ -3,38 +3,57 @@ import { useGatehouse } from '../../context/GatehouseContext';
 import type { UserRole } from '../../types';
 
 export const AuthView: React.FC<{ mode?: 'login' | 'register' }> = ({ mode = 'login' }) => {
-  const { setUserRole, setActiveTab } = useGatehouse();
+  const { loginUser, registerUser, setActiveTab } = useGatehouse();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>(mode);
   const [role, setRole] = useState<UserRole>('organizer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [phone, setPhone] = useState('');
+  const [statusMsg, setStatusMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setUserRole(role);
-    setSuccessMsg(`Welcome to Gatehouse! Logged in as ${role === 'organizer' ? 'Event Organizer' : 'Event Centre Owner'}.`);
-    setTimeout(() => {
-      if (role === 'centre') {
-        setActiveTab('centre_portal');
+    setStatusMsg(null);
+
+    if (authMode === 'login') {
+      const success = await loginUser(email, password);
+      if (success) {
+        setStatusMsg({ type: 'ok', text: 'Authentication successful! Redirecting to Control Room…' });
+        setTimeout(() => {
+          setActiveTab(role === 'centre' ? 'centre_portal' : 'dashboard');
+        }, 800);
       } else {
-        setActiveTab('dashboard');
+        setStatusMsg({ type: 'err', text: 'Invalid email or password. Please try again.' });
       }
-    }, 1200);
+    } else {
+      if (!name.trim()) {
+        setStatusMsg({ type: 'err', text: 'Full name or organization name is required.' });
+        return;
+      }
+      const success = await registerUser(name, email, password, role);
+      if (success) {
+        setStatusMsg({ type: 'ok', text: 'Account created successfully! Redirecting to Control Room…' });
+        setTimeout(() => {
+          setActiveTab(role === 'centre' ? 'centre_portal' : 'dashboard');
+        }, 800);
+      } else {
+        setStatusMsg({ type: 'err', text: 'Failed to create account. Email may already be registered.' });
+      }
+    }
   };
 
-  const handleDemoLogin = (targetRole: UserRole) => {
-    setUserRole(targetRole);
-    setSuccessMsg(`Authenticated as Demo ${targetRole === 'organizer' ? 'Organizer' : 'Event Centre Owner'}.`);
-    setTimeout(() => {
-      if (targetRole === 'centre') {
-        setActiveTab('centre_portal');
-      } else {
-        setActiveTab('dashboard');
-      }
-    }, 800);
+  const handleDemoLogin = async (targetRole: UserRole) => {
+    setStatusMsg(null);
+    const demoEmail = targetRole === 'organizer' ? 'chidinma@xquisitevents.ng' : 'events@ekohotels.com';
+    const success = await loginUser(demoEmail, 'password123');
+    if (success) {
+      setStatusMsg({ type: 'ok', text: `Logged in as Demo ${targetRole === 'organizer' ? 'Organizer' : 'Venue Manager'}.` });
+      setTimeout(() => {
+        setActiveTab(targetRole === 'centre' ? 'centre_portal' : 'dashboard');
+      }, 600);
+    }
   };
 
   return (
@@ -45,7 +64,7 @@ export const AuthView: React.FC<{ mode?: 'login' | 'register' }> = ({ mode = 'lo
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#173226] text-[#3ED98A] text-xs font-mono font-bold border border-[#3ED98A]/30">
             <span className="w-2 h-2 rounded-full bg-[#3ED98A] animate-ping" />
-            GATEHOUSE AUTHENTICATION PORTAL
+            GATEHOUSE SECURE JWT AUTHENTICATION
           </div>
           <h2 className="text-2xl font-bold font-['Space_Grotesk'] text-[#EDEFF3]">
             {authMode === 'login' ? 'Sign In to Control Room' : 'Create Gatehouse Account'}
@@ -59,7 +78,10 @@ export const AuthView: React.FC<{ mode?: 'login' | 'register' }> = ({ mode = 'lo
         <div className="panel space-y-4">
           <div className="flex border-b border-[#262D38] pb-3">
             <button
-              onClick={() => setAuthMode('login')}
+              onClick={() => {
+                setAuthMode('login');
+                setStatusMsg(null);
+              }}
               className={`flex-1 py-2 text-xs font-mono font-bold transition-all ${
                 authMode === 'login'
                   ? 'text-[#3ED98A] border-b-2 border-[#3ED98A]'
@@ -69,7 +91,10 @@ export const AuthView: React.FC<{ mode?: 'login' | 'register' }> = ({ mode = 'lo
               Sign In
             </button>
             <button
-              onClick={() => setAuthMode('register')}
+              onClick={() => {
+                setAuthMode('register');
+                setStatusMsg(null);
+              }}
               className={`flex-1 py-2 text-xs font-mono font-bold transition-all ${
                 authMode === 'register'
                   ? 'text-[#3ED98A] border-b-2 border-[#3ED98A]'
@@ -112,16 +137,25 @@ export const AuthView: React.FC<{ mode?: 'login' | 'register' }> = ({ mode = 'lo
             </div>
           </div>
 
-          {/* FORM */}
-          {successMsg ? (
-            <div className="p-4 rounded-lg bg-[#173226] border border-[#3ED98A] text-[#3ED98A] text-xs font-mono text-center font-bold">
-              {successMsg}
+          {/* STATUS BANNER */}
+          {statusMsg && (
+            <div
+              className={`p-3 rounded-lg text-xs font-mono font-bold text-center border ${
+                statusMsg.type === 'ok'
+                  ? 'bg-[#173226] border-[#3ED98A] text-[#3ED98A]'
+                  : 'bg-[#331B1D] border-[#E5555C] text-[#E5555C]'
+              }`}
+            >
+              {statusMsg.text}
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-3 pt-2">
-              {authMode === 'register' && (
+          )}
+
+          {/* FORM */}
+          <form onSubmit={handleSubmit} className="space-y-3 pt-2">
+            {authMode === 'register' && (
+              <>
                 <div className="field">
-                  <label>Full Name / Organization Name</label>
+                  <label>Full Name / Organization Name *</label>
                   <input
                     type="text"
                     placeholder="e.g. Chidinma Okoro (Xquisit Events)"
@@ -130,35 +164,45 @@ export const AuthView: React.FC<{ mode?: 'login' | 'register' }> = ({ mode = 'lo
                     required
                   />
                 </div>
-              )}
 
-              <div className="field">
-                <label>Work Email Address</label>
-                <input
-                  type="email"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+                <div className="field">
+                  <label>Phone / WhatsApp Number</label>
+                  <input
+                    type="tel"
+                    placeholder="08031234567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
 
-              <div className="field">
-                <label>Password</label>
-                <input
-                  type="password"
-                  placeholder="••••••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="field">
+              <label>Work Email Address *</label>
+              <input
+                type="email"
+                placeholder="name@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
-              <button type="submit" className="btn btn-go w-full py-3 text-xs font-bold">
-                {authMode === 'login' ? 'Sign In to Gatehouse' : 'Create Account &amp; Access Dashboard'}
-              </button>
-            </form>
-          )}
+            <div className="field">
+              <label>Password *</label>
+              <input
+                type="password"
+                placeholder="••••••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button type="submit" className="btn btn-go w-full py-3 text-xs font-bold shadow-lg shadow-[#3ED98A]/20">
+              {authMode === 'login' ? 'Sign In to Gatehouse' : 'Create Account &amp; Access Dashboard'}
+            </button>
+          </form>
 
           {/* QUICK DEMO LOGIN BUTTONS */}
           <div className="pt-3 border-t border-[#262D38] space-y-2">

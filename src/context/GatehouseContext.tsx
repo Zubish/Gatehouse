@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { 
   UserRole, 
+  User,
   EventCentre, 
   EventItem, 
   Booking, 
@@ -10,11 +11,19 @@ import type {
   ViewTab 
 } from '../types';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 interface GatehouseContextType {
+  // Authentication & Session
+  currentUser: User | null;
+  authToken: string | null;
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
+  loginUser: (email: string, password?: string) => Promise<boolean>;
+  registerUser: (name: string, email: string, password?: string, role?: UserRole) => Promise<boolean>;
+  logoutUser: () => void;
+
+  // View Router Navigation
   activeTab: ViewTab;
   setActiveTab: (tab: ViewTab) => void;
 
@@ -60,6 +69,10 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [userRole, setUserRole] = useState<UserRole>('organizer');
   const [activeTab, setActiveTab] = useState<ViewTab>('landing');
 
+  // Auth State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('gatehouse_auth_token'));
+
   const [eventCentres, setEventCentres] = useState<EventCentre[]>([]);
   const [selectedCentre, setSelectedCentre] = useState<EventCentre | null>(null);
 
@@ -73,7 +86,87 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [checkinTimeline, setCheckinTimeline] = useState<Date[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch initial data from Express + Neon DB API
+  // Authenticate from Token on Startup
+  useEffect(() => {
+    const initAuth = async () => {
+      if (authToken) {
+        try {
+          const res = await fetch(`${API_BASE}/auth/me`, {
+            headers: { Authorization: `Bearer ${authToken}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setCurrentUser(data.user);
+            setUserRole(data.user.role);
+          } else {
+            localStorage.removeItem('gatehouse_auth_token');
+            setAuthToken(null);
+          }
+        } catch (e) {
+          console.error('Auth verification error:', e);
+        }
+      }
+    };
+    initAuth();
+  }, [authToken]);
+
+  // Login User
+  const loginUser = async (email: string, password = 'password123'): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('gatehouse_auth_token', data.token);
+        setAuthToken(data.token);
+        setCurrentUser(data.user);
+        setUserRole(data.user.role);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  // Register User
+  const registerUser = async (name: string, email: string, password = 'password123', role: UserRole = 'organizer'): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('gatehouse_auth_token', data.token);
+        setAuthToken(data.token);
+        setCurrentUser(data.user);
+        setUserRole(data.user.role);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  // Logout User
+  const logoutUser = () => {
+    localStorage.removeItem('gatehouse_auth_token');
+    setAuthToken(null);
+    setCurrentUser(null);
+    setActiveTab('landing');
+  };
+
+  // Fetch initial data from API
   const fetchAllData = async () => {
     try {
       setLoading(true);
@@ -96,7 +189,7 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setBookings(bookingsRes);
       setDelegations(delegationsRes);
     } catch (e) {
-      console.error('Failed to connect to Gatehouse Express / Neon DB API:', e);
+      console.error('Failed to connect to Gatehouse API:', e);
     } finally {
       setLoading(false);
     }
@@ -130,7 +223,7 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const activeEvent: EventItem = events.find((e) => e.id === activeEventId) || {
     id: 'evt_fallback',
-    organizerId: 'u_org_1',
+    organizerId: currentUser?.id || 'u_org_1',
     name: 'Bloom Xquisit Gala 2026',
     date: 'Sat, 23 Aug 2026',
     startTime: '18:00',
@@ -157,6 +250,8 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           requestedDate,
           guestEstimate,
           message,
+          organizerId: currentUser?.id,
+          organizerName: currentUser?.name,
         }),
       });
       const newBooking = await res.json();
@@ -176,7 +271,6 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
       const updated = await res.json();
       setBookings((prev) => prev.map((b) => (b.id === bookingId ? updated : b)));
-      // Refresh events & delegations
       fetchAllData();
     } catch (e) {
       console.error(e);
@@ -195,7 +289,14 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const res = await fetch(`${API_BASE}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, date, startTime, capacity, eventCentreId: centreId }),
+        body: JSON.stringify({
+          name,
+          date,
+          startTime,
+          capacity,
+          eventCentreId: centreId,
+          organizerId: currentUser?.id,
+        }),
       });
       const newEvt = await res.json();
       setEvents((prev) => [...prev, newEvt]);
@@ -251,7 +352,7 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Check In Guest directly
   const checkInGuest = async (
     guestId: string,
-    scannedBy = 'Gate Staff',
+    scannedBy = currentUser?.name || 'Gate Staff',
     method: 'qr_scan' | 'manual_code' | 'search_match' = 'manual_code'
   ) => {
     try {
@@ -293,7 +394,7 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         body: JSON.stringify({
           eventId: activeEventId,
           qrPayloadOrCode,
-          scannedBy: 'Gate Camera Agent',
+          scannedBy: currentUser?.name || 'Gate Camera Agent',
           method: 'qr_scan',
         }),
       });
@@ -383,8 +484,13 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   return (
     <GatehouseContext.Provider
       value={{
+        currentUser,
+        authToken,
         userRole,
         setUserRole,
+        loginUser,
+        registerUser,
+        logoutUser,
         activeTab,
         setActiveTab,
         eventCentres,

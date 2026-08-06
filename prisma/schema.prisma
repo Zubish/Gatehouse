@@ -12,7 +12,8 @@ model User {
   name         String
   email        String        @unique
   phone        String
-  role         String        // 'organizer' | 'centre' | 'guest'
+  password     String?       // Hashed password with bcrypt
+  role         String        // 'organizer' | 'centre' | 'staff' | 'guest'
   createdAt    DateTime      @default(now())
   eventCentres EventCentre[]
   events       Event[]

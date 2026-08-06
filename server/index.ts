@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
@@ -8,6 +10,7 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || 'GATEHOUSE-PRODUCTION-JWT-SECRET-KEY-2026';
 
 app.use(cors());
 app.use(express.json());
@@ -45,32 +48,155 @@ function genCode(): string {
   return 'EVT-' + Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
+// ---------------- AUTHENTICATION ENDPOINTS ----------------
+
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, phone, password, role } = req.body;
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Name, email, and password are required.' });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (existing) {
+      return res.status(400).json({ error: 'An account with this email already exists.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userRole = role === 'centre' ? 'centre' : 'organizer';
+
+    const newUser = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        phone: phone || '08000000000',
+        password: hashedPassword,
+        role: userRole,
+      },
+    });
+
+    if (userRole === 'centre') {
+      await prisma.eventCentre.create({
+        data: {
+          userId: newUser.id,
+          name: `${newUser.name} Event Facility`,
+          description: 'Premium multipurpose event facility.',
+          address: 'Victoria Island',
+          city: 'Lagos',
+          capacityMin: 200,
+          capacityMax: 2000,
+          priceRange: '₦1,500,000 / day',
+          photos: ['https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'],
+          amenities: ['VIP Lounge', 'Air Conditioning', 'High Security', 'Parking'],
+          status: 'approved',
+        },
+      });
+    }
+
+    const token = jwt.sign({ userId: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, {
+      expiresIn: '7d',
+    });
+
+    res.status(201).json({
+      token,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    if (user.password) {
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) {
+        return res.status(401).json({ error: 'Invalid email or password.' });
+      }
+    }
+
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+      expiresIn: '7d',
+    });
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token required.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (err: any) {
+    res.status(401).json({ error: 'Invalid or expired authentication token.' });
+  }
+});
+
 // ---------------- API ENDPOINTS ----------------
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', database: 'Neon PostgreSQL', time: new Date().toISOString() });
 });
 
-// Event Centres
 app.get('/api/centres', async (req, res) => {
   try {
-    const centres = await prisma.eventCentre.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const centres = await prisma.eventCentre.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(centres);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Events
 app.get('/api/events', async (req, res) => {
   try {
-    const events = await prisma.event.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { eventCentre: true },
-    });
+    const events = await prisma.event.findMany({ orderBy: { createdAt: 'desc' }, include: { eventCentre: true } });
     res.json(events);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -79,15 +205,18 @@ app.get('/api/events', async (req, res) => {
 
 app.post('/api/events', async (req, res) => {
   try {
-    const { name, date, startTime, capacity, eventCentreId } = req.body;
+    const { name, date, startTime, capacity, eventCentreId, organizerId } = req.body;
     const token = 'EVT-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-    // Default organizer
-    const org = await prisma.user.findFirst({ where: { role: 'organizer' } });
+    let orgId = organizerId;
+    if (!orgId) {
+      const org = await prisma.user.findFirst({ where: { role: 'organizer' } });
+      orgId = org?.id || 'u_org_1';
+    }
 
     const newEvent = await prisma.event.create({
       data: {
-        organizerId: org?.id || 'u_org_1',
+        organizerId: orgId,
         eventCentreId: eventCentreId || null,
         name: name.trim(),
         date: date.trim(),
@@ -104,12 +233,9 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-// Bookings
 app.get('/api/bookings', async (req, res) => {
   try {
-    const bookings = await prisma.booking.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(bookings);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -118,14 +244,21 @@ app.get('/api/bookings', async (req, res) => {
 
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { eventCentreId, eventName, requestedDate, guestEstimate, message } = req.body;
-    const org = await prisma.user.findFirst({ where: { role: 'organizer' } });
+    const { eventCentreId, eventName, requestedDate, guestEstimate, message, organizerId, organizerName } = req.body;
+
+    let orgId = organizerId;
+    let orgName = organizerName;
+    if (!orgId) {
+      const org = await prisma.user.findFirst({ where: { role: 'organizer' } });
+      orgId = org?.id || 'u_org_1';
+      orgName = org?.name || 'Chidinma Okoro (Xquisit Events)';
+    }
 
     const newBooking = await prisma.booking.create({
       data: {
         eventCentreId,
-        organizerId: org?.id || 'u_org_1',
-        organizerName: org?.name || 'Chidinma Okoro (Xquisit Events)',
+        organizerId: orgId,
+        organizerName: orgName || 'Organizer',
         eventName,
         requestedDate,
         guestEstimate: Number(guestEstimate),
@@ -143,12 +276,9 @@ app.post('/api/bookings', async (req, res) => {
 app.patch('/api/bookings/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // 'accepted' | 'declined'
+    const { status } = req.body;
 
-    const updated = await prisma.booking.update({
-      where: { id },
-      data: { status },
-    });
+    const updated = await prisma.booking.update({ where: { id }, data: { status } });
 
     if (status === 'accepted') {
       const token = 'EVT-' + Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -181,27 +311,20 @@ app.patch('/api/bookings/:id', async (req, res) => {
   }
 });
 
-// Delegations
 app.get('/api/delegations', async (req, res) => {
   try {
-    const delegations = await prisma.delegation.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const delegations = await prisma.delegation.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(delegations);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Guests
 app.get('/api/guests', async (req, res) => {
   try {
     const { eventId } = req.query;
     const where = eventId ? { eventId: String(eventId) } : {};
-    const guests = await prisma.guest.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    });
+    const guests = await prisma.guest.findMany({ where, orderBy: { createdAt: 'desc' } });
     res.json(guests);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -213,9 +336,7 @@ app.post('/api/guests', async (req, res) => {
     const { eventId, name, phone, email, category, source } = req.body;
 
     const eventObj = await prisma.event.findUnique({ where: { id: eventId } });
-    if (!eventObj) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
+    if (!eventObj) return res.status(404).json({ error: 'Event not found' });
 
     const currentCount = await prisma.guest.count({ where: { eventId } });
     if (currentCount >= eventObj.capacity) {
@@ -247,16 +368,12 @@ app.post('/api/guests', async (req, res) => {
   }
 });
 
-// Bulk Guest Import
 app.post('/api/guests/bulk', async (req, res) => {
   try {
     const { eventId, rawText, source } = req.body;
     const lines = String(rawText).split('\n').map((l) => l.trim()).filter(Boolean);
-
     const eventObj = await prisma.event.findUnique({ where: { id: eventId } });
-    if (!eventObj) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
+    if (!eventObj) return res.status(404).json({ error: 'Event not found' });
 
     let addedCount = 0;
     for (const line of lines) {
@@ -291,21 +408,17 @@ app.post('/api/guests/bulk', async (req, res) => {
   }
 });
 
-// QR & Camera Gate Check-in
 app.post('/api/guests/scan', async (req, res) => {
   try {
     const { eventId, qrPayloadOrCode, scannedBy } = req.body;
     const raw = String(qrPayloadOrCode).trim();
-
     let targetGuest = null;
 
-    // 1. HMAC Token Verification
     const qrResult = verifyQrToken(raw);
     if (qrResult.valid && qrResult.guestId) {
       targetGuest = await prisma.guest.findUnique({ where: { id: qrResult.guestId } });
     }
 
-    // 2. Code Lookup Fallback
     if (!targetGuest) {
       targetGuest = await prisma.guest.findFirst({
         where: {
@@ -315,13 +428,9 @@ app.post('/api/guests/scan', async (req, res) => {
       });
     }
 
-    // 3. Name Search Fallback
     if (!targetGuest) {
       targetGuest = await prisma.guest.findFirst({
-        where: {
-          eventId,
-          name: { contains: raw, mode: 'insensitive' },
-        },
+        where: { eventId, name: { contains: raw, mode: 'insensitive' } },
       });
     }
 
@@ -355,11 +464,7 @@ app.post('/api/guests/scan', async (req, res) => {
     const now = new Date();
     const updated = await prisma.guest.update({
       where: { id: targetGuest.id },
-      data: {
-        status: 'in',
-        checkinTime: now,
-        checkedInBy: scannedBy || 'Gate Camera Agent',
-      },
+      data: { status: 'in', checkinTime: now, checkedInBy: scannedBy || 'Gate Camera Agent' },
     });
 
     await prisma.checkinLog.create({
@@ -383,7 +488,6 @@ app.post('/api/guests/scan', async (req, res) => {
   }
 });
 
-// Delete Guest
 app.delete('/api/guests/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -394,7 +498,6 @@ app.delete('/api/guests/:id', async (req, res) => {
   }
 });
 
-// Undo Check-in
 app.patch('/api/guests/:id/undo', async (req, res) => {
   try {
     const { id } = req.params;
@@ -409,5 +512,5 @@ app.patch('/api/guests/:id/undo', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Gatehouse Express Server running on http://localhost:${PORT} connected to Neon PostgreSQL`);
+  console.log(`🚀 Gatehouse Express Server running on http://localhost:${PORT} with JWT Auth & Neon DB`);
 });
