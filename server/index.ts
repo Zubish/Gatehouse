@@ -179,6 +179,23 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
+// ---------------- HARDWARE TURNSTILE API (PHASE 7) ----------------
+
+app.post('/api/hardware/gate-turnstile/unlock', async (req, res) => {
+  try {
+    const { gateLaneId, passCode, guestId } = req.body;
+    res.json({
+      status: 'unlocked',
+      lane: gateLaneId || 'Gate Lane #01',
+      pulseDurationMs: 3000,
+      timestamp: new Date().toISOString(),
+      message: `Physical turnstile barrier unlocked for code ${passCode || guestId}.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---------------- API ENDPOINTS ----------------
 
 app.get('/api/health', (req, res) => {
@@ -512,5 +529,5 @@ app.patch('/api/guests/:id/undo', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Gatehouse Express Server running on http://localhost:${PORT} with JWT Auth & Neon DB`);
+  console.log(`🚀 Gatehouse Express Server running on http://localhost:${PORT} with Hardware API`);
 });

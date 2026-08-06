@@ -178,6 +178,23 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
+// ---------------- HARDWARE TURNSTILE API (PHASE 7) ----------------
+
+app.post('/api/hardware/gate-turnstile/unlock', async (req, res) => {
+  try {
+    const { gateLaneId, passCode, guestId } = req.body;
+    res.json({
+      status: 'unlocked',
+      lane: gateLaneId || 'Gate Lane #01',
+      pulseDurationMs: 3000,
+      timestamp: new Date().toISOString(),
+      message: `Physical turnstile barrier unlocked for code ${passCode || guestId}.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---------------- API ENDPOINTS ----------------
 
 app.get('/api/health', (req, res) => {

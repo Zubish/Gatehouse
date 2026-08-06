@@ -15,6 +15,10 @@ export const CheckinView: React.FC = () => {
   const [cameraSimulating, setCameraSimulating] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
 
+  // Hardware & Badge Printing State
+  const [turnstileMsg, setTurnstileMsg] = useState('');
+  const [showBadgePrintModal, setShowBadgePrintModal] = useState(false);
+
   const [statusBanner, setStatusBanner] = useState<{
     show: boolean;
     type: 'ok' | 'warn' | 'err';
@@ -59,7 +63,6 @@ export const CheckinView: React.FC = () => {
     setCameraSimulating(true);
     setTimeout(async () => {
       setCameraSimulating(false);
-      // Pick first guest or default token
       const target = guests.find((g) => g.status === 'out') || guests[0];
       if (target) {
         const res = await processQrScan(target.qrPayload);
@@ -87,6 +90,23 @@ export const CheckinView: React.FC = () => {
     setInputVal('');
   };
 
+  // Turnstile Hardware API Call
+  const handlePulseTurnstile = async () => {
+    if (!selectedGuest) return;
+    try {
+      const res = await fetch('/api/hardware/gate-turnstile/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gateLaneId: 'Gate Lane #01 (VIP Entrance)', passCode: selectedGuest.code }),
+      });
+      await res.json();
+      setTurnstileMsg(`🔓 Turnstile Barrier Unlocked! (Pulse: 3000ms for ${selectedGuest.name})`);
+      setTimeout(() => setTurnstileMsg(''), 3500);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const q = inputVal.trim().toLowerCase();
   const suggestions =
     q && !selectedGuest
@@ -106,17 +126,16 @@ export const CheckinView: React.FC = () => {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#173226] text-[#3ED98A] font-mono text-xs font-bold border border-[#3ED98A]/30 mb-2">
               <span className="w-2 h-2 rounded-full bg-[#3ED98A] animate-ping" />
-              HMAC QR GATE CAMERA SCANNER ENGINE (PHASE 3)
+              HARDWARE &amp; HMAC QR ACCESS CONTROL (PHASE 7)
             </div>
             <h2 className="text-2xl font-bold font-['Space_Grotesk'] text-[#EDEFF3]">
-              Gate Scanner &amp; Access Control
+              Gate Scanner &amp; Hardware Integration
             </h2>
             <p className="text-xs font-mono text-[#8B93A3]">
-              {activeEvent.name} • 2.5s Scan Velocity • Cryptographic HMAC Token Verification
+              {activeEvent.name} • Physical Turnstile API • Thermal Badge Printer Simulator
             </p>
           </div>
 
-          {/* OFFLINE EDGE MESH TOGGLE */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setOfflineMode(!offlineMode)}
@@ -131,16 +150,14 @@ export const CheckinView: React.FC = () => {
           </div>
         </div>
 
-        {/* SCANNER GRID */}
+        {/* SCANNER & HARDWARE GRID */}
         <div className="checkin-grid">
           
           {/* LEFT: CAMERA SIMULATOR & INPUT */}
           <div className="panel scan-box space-y-4">
             
-            {/* CAMERA RETICLE BOX */}
             <div className="relative h-48 bg-[#080c14] rounded-xl border-2 border-dashed border-[#262D38] flex flex-col items-center justify-center overflow-hidden group">
               
-              {/* Animated Laser Reticle Line */}
               {cameraSimulating && (
                 <div className="absolute inset-x-0 h-1 bg-[#3ED98A] shadow-[0_0_15px_#3ED98A] animate-bounce z-10" />
               )}
@@ -153,11 +170,10 @@ export const CheckinView: React.FC = () => {
                   {cameraSimulating ? '⚡ Scanning HMAC QR Token...' : 'Align QR Pass Code in Frame'}
                 </div>
                 <div className="text-[11px] font-mono text-[#8B93A3]">
-                  Supports 2.5s instant verification &amp; duplicate blocking
+                  2.5s verification &amp; physical barrier unlock pulse
                 </div>
               </div>
 
-              {/* Trigger Button */}
               <button
                 onClick={handleSimulateCameraScan}
                 disabled={cameraSimulating}
@@ -169,7 +185,6 @@ export const CheckinView: React.FC = () => {
 
             <div className="divider" />
 
-            {/* MANUAL CODE & NAME SEARCH */}
             <div className="space-y-2 text-left">
               <label>Enter Check-In Code or Search Guest Name</label>
               <input
@@ -183,7 +198,6 @@ export const CheckinView: React.FC = () => {
               />
             </div>
 
-            {/* SUGGESTION DROPDOWN */}
             {q && !selectedGuest && (
               <div className="suggest-list bg-[#0b0e14] border border-[#262D38] rounded-xl p-2 max-h-48 overflow-y-auto">
                 {suggestions.length > 0 ? (
@@ -206,18 +220,17 @@ export const CheckinView: React.FC = () => {
             )}
 
             <div className="scan-hint text-[11px] text-[#565E6D] font-mono">
-              Signed HMAC Token: <code>e:eventId, g:guestId, c:code, sig:HMAC</code>
+              Hardware Relay Protocol: <code>POST /api/hardware/gate-turnstile/unlock</code>
             </div>
 
           </div>
 
-          {/* RIGHT: BADGE PREVIEW & STATUS BANNERS */}
+          {/* RIGHT: BADGE PREVIEW & HARDWARE ACTIONS */}
           <div className="space-y-4">
             
             {selectedGuest ? (
               <div className="badge max-w-full p-6 bg-[#1B2129] border border-[#262D38] rounded-2xl flex items-center gap-6 shadow-2xl">
                 
-                {/* SVG QR CODE */}
                 <div className="w-28 h-28 bg-white rounded-xl p-2 shrink-0 flex items-center justify-center shadow-lg">
                   <svg viewBox="0 0 21 21" className="w-full h-full">
                     {qrGrid.map((row, r) =>
@@ -257,8 +270,15 @@ export const CheckinView: React.FC = () => {
                 <div className="text-3xl">🎫</div>
                 <div className="font-bold text-sm text-[#EDEFF3]">No Guest Selected</div>
                 <div className="text-xs font-mono text-[#8B93A3]">
-                  Scan a QR code or type a guest name/code to inspect badge details.
+                  Scan a QR code or search a guest to enable hardware unlock &amp; thermal badge printing.
                 </div>
+              </div>
+            )}
+
+            {/* TURNSTILE HARDWARE NOTIFICATION BANNER */}
+            {turnstileMsg && (
+              <div className="p-3.5 rounded-xl bg-[#173226] border border-[#3ED98A] text-[#3ED98A] text-xs font-mono font-bold text-center animate-pulse">
+                {turnstileMsg}
               </div>
             )}
 
@@ -271,19 +291,71 @@ export const CheckinView: React.FC = () => {
               </div>
             )}
 
-            {/* CONFIRM CHECK-IN BUTTON */}
-            {selectedGuest && selectedGuest.status === 'out' && (
-              <button
-                className="btn btn-go w-full py-4 font-mono font-bold text-sm shadow-xl shadow-[#3ED98A]/20"
-                onClick={handleConfirmCheckin}
-              >
-                Confirm Gate Check-In &rarr;
-              </button>
+            {/* CONFIRM CHECK-IN & HARDWARE CONTROLS */}
+            {selectedGuest && (
+              <div className="space-y-2">
+                {selectedGuest.status === 'out' && (
+                  <button
+                    className="btn btn-go w-full py-3.5 font-mono font-bold text-sm shadow-xl shadow-[#3ED98A]/20"
+                    onClick={handleConfirmCheckin}
+                  >
+                    Confirm Gate Check-In &rarr;
+                  </button>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={handlePulseTurnstile}
+                    className="btn btn-ghost text-xs font-mono font-bold text-[#F0A93B] border-[#F0A93B]/30 hover:bg-[#332A14]"
+                  >
+                    🔓 Pulse Turnstile Barrier
+                  </button>
+                  <button
+                    onClick={() => setShowBadgePrintModal(true)}
+                    className="btn btn-ghost text-xs font-mono font-bold text-[#3ED98A] border-[#3ED98A]/30 hover:bg-[#173226]"
+                  >
+                    🖨️ Print Thermal Badge
+                  </button>
+                </div>
+              </div>
             )}
 
           </div>
 
         </div>
+
+        {/* THERMAL BADGE PRINT MODAL */}
+        {showBadgePrintModal && selectedGuest && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="glass-card max-w-sm w-full p-6 rounded-2xl border border-white/20 bg-[#0f172a] text-center space-y-4">
+              <div className="flex justify-between items-center border-b border-[#262D38] pb-2">
+                <span className="text-xs font-mono text-[#3ED98A]">Thermal Printer Spooler</span>
+                <button onClick={() => setShowBadgePrintModal(false)} className="text-xs font-mono text-[#8B93A3]">✕</button>
+              </div>
+
+              {/* PRINTABLE THERMAL PASS PREVIEW */}
+              <div className="bg-white text-black p-6 rounded-xl space-y-3 font-['Space_Grotesk'] text-center border-2 border-black">
+                <div className="text-xs font-mono font-bold uppercase tracking-wider text-black/70">GATEHOUSE ENTRY BADGE</div>
+                <div className="text-2xl font-black uppercase text-black">{selectedGuest.name}</div>
+                <div className="text-sm font-bold text-black">{activeEvent.name}</div>
+                <div className="font-mono text-base font-bold bg-black text-white py-1 px-3 rounded inline-block">
+                  {selectedGuest.code}
+                </div>
+                <div className="text-xs font-mono font-bold text-black/80">{selectedGuest.category} PASS</div>
+              </div>
+
+              <button
+                onClick={() => {
+                  window.print();
+                  setShowBadgePrintModal(false);
+                }}
+                className="btn btn-go w-full font-mono font-bold text-xs py-3"
+              >
+                🖨️ Send Job to Thermal Printer Spooler
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </section>
