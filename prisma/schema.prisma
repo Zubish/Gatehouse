@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  phone        String
+  role         String        // 'organizer' | 'centre' | 'guest'
+  createdAt    DateTime      @default(now())
+  eventCentres EventCentre[]
+  events       Event[]
+  bookings     Booking[]
+}
+
+model EventCentre {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  address     String
+  city        String
+  capacityMin Int
+  capacityMax Int
+  priceRange  String
+  photos      String[]
+  amenities   String[]
+  status      String       @default("approved") // 'pending' | 'approved' | 'suspended'
+  createdAt   DateTime     @default(now())
+  events      Event[]
+  bookings    Booking[]
+  delegations Delegation[]
+}
+
+model Event {
+  id                    String       @id @default(cuid())
+  organizerId           String
+  organizer             User         @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  eventCentreId         String?
+  eventCentre           EventCentre? @relation(fields: [eventCentreId], references: [id], onDelete: SetNull)
+  name                  String
+  date                  String
+  startTime             String       @default("18:00")
+  capacity              Int          @default(500)
+  status                String       @default("confirmed") // 'draft' | 'confirmed' | 'completed' | 'cancelled'
+  registrationLinkToken String       @unique
+  createdAt             DateTime     @default(now())
+  guests                Guest[]
+  bookings              Booking[]
+  delegations           Delegation[]
+  checkinLogs           CheckinLog[]
+}
+
+model Booking {
+  id            String       @id @default(cuid())
+  eventId       String?
+  event         Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventCentreId String
+  eventCentre   EventCentre  @relation(fields: [eventCentreId], references: [id], onDelete: Cascade)
+  organizerId   String
+  organizer     User         @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  organizerName String
+  eventName     String
+  requestedDate String
+  guestEstimate Int
+  status        String       @default("requested") // 'requested' | 'accepted' | 'declined' | 'cancelled'
+  message       String
+  createdAt     DateTime     @default(now())
+}
+
+model Delegation {
+  id            String      @id @default(cuid())
+  eventId       String
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventCentreId String
+  eventCentre   EventCentre @relation(fields: [eventCentreId], references: [id], onDelete: Cascade)
+  permissions   String[]    // ['register_guests', 'scan_guests']
+  grantedBy     String
+  createdAt     DateTime    @default(now())
+}
+
+model Guest {
+  id          String       @id @default(cuid())
+  eventId     String
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name        String
+  phone       String
+  email       String?
+  category    String       @default("Regular") // 'VIP' | 'Regular'
+  source      String       @default("organizer") // 'organizer' | 'centre_import' | 'self_registered'
+  code        String
+  qrPayload   String
+  status      String       @default("out") // 'in' | 'out'
+  checkinTime DateTime?
+  checkedInBy String?
+  createdAt   DateTime     @default(now())
+  checkinLogs CheckinLog[]
+}
+
+model CheckinLog {
+  id        String   @id @default(cuid())
+  guestId   String
+  guest     Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  scannedBy String
+  timestamp DateTime @default(now())
+  method    String   // 'qr_scan' | 'manual_code' | 'search_match'
+  result    String   // 'success' | 'duplicate' | 'invalid'
+}

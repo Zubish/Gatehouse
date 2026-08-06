@@ -1,0 +1,45 @@
+{
+  "name": "gatehouse-platform",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server": "ts-node server/index.ts",
+    "build": "tsc -b && vite build",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.0",
+    "@types/canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "framer-motion": "^13.0.0",
+    "lucide-react": "^1.28.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "oxlint": "^1.75.0",
+    "prisma": "^6.4.0",
+    "tailwindcss": "^4.3.3",
+    "ts-node": "^10.9.2",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}
