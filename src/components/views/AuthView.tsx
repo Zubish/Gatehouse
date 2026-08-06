@@ -22,7 +22,7 @@ export const AuthView: React.FC<{ mode?: 'login' | 'register' }> = ({ mode = 'lo
       if (success) {
         setStatusMsg({ type: 'ok', text: 'Authentication successful! Redirecting to Control Room…' });
         setTimeout(() => {
-          setActiveTab(role === 'centre' ? 'centre_portal' : 'dashboard');
+          setActiveTab(role === 'centre' ? 'centre-dash' : 'dashboard');
         }, 800);
       } else {
         setStatusMsg({ type: 'err', text: 'Invalid email or password. Please try again.' });
@@ -36,7 +36,7 @@ export const AuthView: React.FC<{ mode?: 'login' | 'register' }> = ({ mode = 'lo
       if (success) {
         setStatusMsg({ type: 'ok', text: 'Account created successfully! Redirecting to Control Room…' });
         setTimeout(() => {
-          setActiveTab(role === 'centre' ? 'centre_portal' : 'dashboard');
+          setActiveTab(role === 'centre' ? 'centre-dash' : 'dashboard');
         }, 800);
       } else {
         setStatusMsg({ type: 'err', text: 'Failed to create account. Email may already be registered.' });
@@ -51,7 +51,7 @@ export const AuthView: React.FC<{ mode?: 'login' | 'register' }> = ({ mode = 'lo
     if (success) {
       setStatusMsg({ type: 'ok', text: `Logged in as Demo ${targetRole === 'organizer' ? 'Organizer' : 'Venue Manager'}.` });
       setTimeout(() => {
-        setActiveTab(targetRole === 'centre' ? 'centre_portal' : 'dashboard');
+        setActiveTab(targetRole === 'centre' ? 'centre-dash' : 'dashboard');
       }, 600);
     }
   };

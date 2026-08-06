@@ -1,4 +1,4 @@
-export type UserRole = 'organizer' | 'centre' | 'guest';
+export type UserRole = 'organizer' | 'centre' | 'staff' | 'guest' | 'admin';
 
 export interface User {
   id: string;
@@ -6,7 +6,9 @@ export interface User {
   email: string;
   phone: string;
   role: UserRole;
-  token?: string;
+  password?: string;
+  status?: 'active' | 'suspended';
+  createdAt?: string;
 }
 
 export interface EventCentre {
@@ -21,7 +23,7 @@ export interface EventCentre {
   priceRange: string;
   photos: string[];
   amenities: string[];
-  status: 'pending' | 'approved' | 'suspended';
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface EventItem {
@@ -34,6 +36,7 @@ export interface EventItem {
   capacity: number;
   status: 'draft' | 'confirmed' | 'completed' | 'cancelled';
   registrationLinkToken: string;
+  eventCentre?: EventCentre;
 }
 
 export interface Booking {
@@ -45,17 +48,18 @@ export interface Booking {
   eventName: string;
   requestedDate: string;
   guestEstimate: number;
-  status: 'requested' | 'accepted' | 'declined' | 'cancelled';
-  message: string;
-  createdAt: string;
+  status: 'requested' | 'accepted' | 'declined';
+  message?: string;
+  createdAt?: string;
 }
 
 export interface Delegation {
   id: string;
   eventId: string;
   eventCentreId: string;
-  permissions: ('register_guests' | 'scan_guests')[];
+  permissions: Array<'register_guests' | 'scan_guests'>;
   grantedBy: string;
+  createdAt?: string;
 }
 
 export interface Guest {
@@ -68,34 +72,33 @@ export interface Guest {
   source: 'organizer' | 'centre_import' | 'self_registered';
   code: string;
   qrPayload: string;
-  status: 'in' | 'out';
-  checkinTime: Date | null;
-  checkedInBy?: string;
+  status: 'out' | 'in';
+  checkinTime?: Date | null;
+  checkedInBy?: string | null;
 }
 
 export interface CheckinLog {
   id: string;
   guestId: string;
   eventId: string;
-  guestName: string;
   scannedBy: string;
   timestamp: Date;
-  method: 'qr_scan' | 'manual_code' | 'search_match';
+  method: 'qr_scan' | 'manual_code' | 'face_id';
   result: 'success' | 'duplicate' | 'invalid';
 }
 
-export type ViewRoute = 
+export type ViewRoute =
   | 'landing'
   | 'login'
   | 'register'
-  | 'dashboard' 
-  | 'guests' 
-  | 'checkin' 
-  | 'walkin' 
-  | 'venues' 
+  | 'dashboard'
+  | 'guests'
+  | 'checkin'
+  | 'walkin'
   | 'centres'
-  | 'centre_portal' 
-  | 'public_reg' 
-  | 'settings';
+  | 'centre-dash'
+  | 'public-reg'
+  | 'settings'
+  | 'admin';
 
 export type ViewTab = ViewRoute;
