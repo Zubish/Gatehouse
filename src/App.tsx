@@ -2,6 +2,7 @@ import React from 'react';
 import { GatehouseProvider, useGatehouse } from './context/GatehouseContext';
 import { Topbar } from './components/layout/Topbar';
 import { LandingPageView } from './components/views/LandingPageView';
+import { AuthView } from './components/views/AuthView';
 import { DashboardView } from './components/views/DashboardView';
 import { GuestListView } from './components/views/GuestListView';
 import { CheckinView } from './components/views/CheckinView';
@@ -17,10 +18,13 @@ const MainContent: React.FC = () => {
   return (
     <main>
       {activeTab === 'landing' && <LandingPageView />}
+      {activeTab === 'login' && <AuthView mode="login" />}
+      {activeTab === 'register' && <AuthView mode="register" />}
       {activeTab === 'dashboard' && <DashboardView />}
       {activeTab === 'guests' && <GuestListView />}
       {activeTab === 'checkin' && <CheckinView />}
       {activeTab === 'walkin' && <WalkinView />}
+      {activeTab === 'venues' && <EventCentresView />}
       {activeTab === 'centres' && <EventCentresView />}
       {activeTab === 'centre_portal' && <CentreDashboardView />}
       {activeTab === 'public_reg' && <PublicRegistrationView />}

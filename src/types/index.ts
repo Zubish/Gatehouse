@@ -6,6 +6,7 @@ export interface User {
   email: string;
   phone: string;
   role: UserRole;
+  token?: string;
 }
 
 export interface EventCentre {
@@ -83,13 +84,18 @@ export interface CheckinLog {
   result: 'success' | 'duplicate' | 'invalid';
 }
 
-export type ViewTab = 
+export type ViewRoute = 
   | 'landing'
+  | 'login'
+  | 'register'
   | 'dashboard' 
   | 'guests' 
   | 'checkin' 
   | 'walkin' 
-  | 'centres' 
+  | 'venues' 
+  | 'centres'
   | 'centre_portal' 
   | 'public_reg' 
   | 'settings';
+
+export type ViewTab = ViewRoute;
