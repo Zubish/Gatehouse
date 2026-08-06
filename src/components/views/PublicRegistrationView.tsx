@@ -11,13 +11,29 @@ export const PublicRegistrationView: React.FC = () => {
   const [email, setEmail] = useState('');
   const [category, setCategory] = useState<'VIP' | 'Regular'>('Regular');
   const [registeredGuest, setRegisteredGuest] = useState<Guest | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copiedLinkMsg, setCopiedLinkMsg] = useState('');
 
-  const capacityReached = guests.length >= activeEvent.capacity;
+  const currentCount = guests.length;
+  const capacityReached = currentCount >= activeEvent.capacity;
+  const spotsLeft = Math.max(0, activeEvent.capacity - currentCount);
+
+  const publicLink = `${window.location.origin}/r/${activeEvent.registrationLinkToken}`;
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(publicLink);
+    setCopiedLinkMsg('Copied to clipboard!');
+    setTimeout(() => setCopiedLinkMsg(''), 2000);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
     const newGuest = await addGuest(name, phone, category, 'self_registered', email);
+    setIsSubmitting(false);
+
     if (newGuest) {
       setRegisteredGuest(newGuest);
     }
@@ -27,22 +43,43 @@ export const PublicRegistrationView: React.FC = () => {
 
   return (
     <section className="view active" id="view-public-reg">
-      <div className="max-w-md mx-auto space-y-4">
+      <div className="max-w-xl mx-auto space-y-6">
         
-        {/* EVENT BANNER HEADER */}
-        <div className="panel text-center space-y-2 border-emerald-500/30">
-          <div className="inline-block px-3 py-1 rounded-full bg-[#173226] text-[#3ED98A] font-mono text-xs font-bold border border-[#3ED98A]/30">
-            Self-Service Guest Registration (Path C)
+        {/* EVENT PUBLIC HEADER BANNER */}
+        <div className="panel text-center space-y-3 border-[#3ED98A]/40 bg-gradient-to-b from-[#0f172a] to-[#173226]/30 p-8 rounded-2xl shadow-xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#173226] text-[#3ED98A] font-mono text-xs font-bold border border-[#3ED98A]/30">
+            <span className="w-2 h-2 rounded-full bg-[#3ED98A] animate-pulse" />
+            PUBLIC SELF-REGISTRATION LINK (PATH C)
           </div>
-          <h2 className="font-bold text-xl text-[#EDEFF3] font-['Space_Grotesk']">
+
+          <h2 className="text-2xl sm:text-3xl font-extrabold font-['Space_Grotesk'] text-[#EDEFF3]">
             {activeEvent.name}
           </h2>
-          <p className="text-xs text-[#8B93A3] font-mono">
-            {activeEvent.date} at {activeEvent.startTime} • Public Link Token: [{activeEvent.registrationLinkToken}]
+
+          <p className="text-xs text-[#94a3b8] font-mono">
+            🗓️ {activeEvent.date} at {activeEvent.startTime} • Public Token: <code className="text-[#3ED98A] font-bold">[{activeEvent.registrationLinkToken}]</code>
           </p>
 
-          <div className="text-[11px] text-[#565E6D] font-mono pt-1">
-            Registered: <strong className="text-[#EDEFF3]">{guests.length}</strong> / {activeEvent.capacity} Capacity
+          {/* SHAREABLE PUBLIC LINK BAR */}
+          <div className="flex items-center gap-2 p-2 rounded-xl bg-[#080c14] border border-[#262D38] text-xs font-mono text-[#8B93A3] max-w-md mx-auto">
+            <span className="truncate flex-1 pl-2 text-left">{publicLink}</span>
+            <button
+              onClick={handleCopyLink}
+              className="btn btn-go btn-sm font-mono font-bold shrink-0"
+            >
+              {copiedLinkMsg || 'Copy Link'}
+            </button>
+          </div>
+
+          {/* CAPACITY METRICS */}
+          <div className="flex justify-center items-center gap-4 text-xs font-mono pt-2">
+            <span className="text-[#8B93A3]">
+              Registered: <strong className="text-white">{currentCount}</strong> / {activeEvent.capacity}
+            </span>
+            <span className="text-[#262D38]">|</span>
+            <span className={spotsLeft > 0 ? 'text-[#3ED98A] font-bold' : 'text-[#E5555C] font-bold'}>
+              {spotsLeft > 0 ? `🔥 ${spotsLeft} Spots Remaining` : '⛔ Event Sold Out'}
+            </span>
           </div>
         </div>
 
@@ -50,11 +87,12 @@ export const PublicRegistrationView: React.FC = () => {
         {!registeredGuest ? (
           <div className="panel space-y-4">
             {capacityReached ? (
-              <div className="p-4 rounded-lg bg-[#331B1D] border border-[#E5555C] text-[#E5555C] text-xs font-mono text-center font-bold">
-                Capacity cap reached ({activeEvent.capacity} guests). Registration closed for this event.
+              <div className="p-6 rounded-xl bg-[#331B1D] border border-[#E5555C] text-[#E5555C] text-xs font-mono text-center font-bold space-y-2">
+                <div className="text-xl">⛔ REGISTRATION CLOSED</div>
+                <div>Capacity cap reached ({activeEvent.capacity} guests max). No further self-registrations allowed.</div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-3">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="field">
                   <label>Full Name *</label>
                   <input
@@ -66,54 +104,63 @@ export const PublicRegistrationView: React.FC = () => {
                   />
                 </div>
 
-                <div className="field">
-                  <label>Phone / WhatsApp *</label>
-                  <input
-                    type="tel"
-                    placeholder="080..."
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                  />
+                <div className="field-row">
+                  <div className="field">
+                    <label>Phone / WhatsApp Number *</label>
+                    <input
+                      type="tel"
+                      placeholder="08031234567"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label>Email Address (For Pass Copy)</label>
+                    <input
+                      type="email"
+                      placeholder="name@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div className="field">
-                  <label>Email Address (For Digital QR Pass)</label>
-                  <input
-                    type="email"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Ticket Category</label>
+                  <label>Select Ticket Tier</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as 'VIP' | 'Regular')}
                   >
-                    <option value="Regular">Regular Guest</option>
-                    <option value="VIP">VIP Guest</option>
+                    <option value="Regular">Regular Pass (Free Access)</option>
+                    <option value="VIP">VIP Access Pass</option>
                   </select>
                 </div>
 
-                <button type="submit" className="btn btn-go w-full py-3 font-bold text-sm">
-                  Register &amp; Claim QR Gate Pass
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn btn-go w-full py-4 text-xs font-mono font-bold shadow-xl shadow-[#3ED98A]/20 hover:scale-[1.01] transition-transform"
+                >
+                  {isSubmitting ? 'Registering…' : '🎟️ Register & Claim Digital QR Gate Pass'}
                 </button>
               </form>
             )}
           </div>
         ) : (
-          <div className="panel text-center space-y-4 border-[#3ED98A]/50">
-            <div className="p-3 rounded-lg bg-[#173226] text-[#3ED98A] text-xs font-mono font-bold">
-              🎉 Registration Confirmed! Your GatePass QR Code is Ready.
+          /* INSTANT QR PASS BADGE RENDER */
+          <div className="panel text-center space-y-6 border-[#3ED98A]/60 bg-[#0f172a] p-8 rounded-2xl shadow-2xl">
+            
+            <div className="p-3 rounded-xl bg-[#173226] text-[#3ED98A] text-xs font-mono font-bold border border-[#3ED98A]/40">
+              🎉 REGISTRATION SUCCESSFUL! YOUR GATEPASS QR CODE IS ACTIVE.
             </div>
 
-            {/* BADGE QR PASS CONTAINER */}
-            <div className="badge max-w-sm mx-auto flex-col p-6 space-y-3 bg-[#1B2129] border border-[#262D38]">
-              {/* SVG QR Code Rendering */}
-              <div className="w-48 h-48 bg-white rounded-xl p-3 mx-auto shadow-xl flex items-center justify-center">
+            {/* BADGE CONTAINER */}
+            <div className="badge max-w-sm mx-auto flex-col p-6 space-y-4 bg-[#1B2129] border border-[#262D38] rounded-2xl shadow-xl">
+              
+              {/* SVG 21x21 QR Code Rendering */}
+              <div className="w-48 h-48 bg-white rounded-xl p-3 mx-auto shadow-2xl flex items-center justify-center">
                 <svg viewBox="0 0 21 21" className="w-full h-full">
                   {qrGrid.map((row, r) =>
                     row.map((cell, c) =>
@@ -125,17 +172,17 @@ export const PublicRegistrationView: React.FC = () => {
                 </svg>
               </div>
 
-              <div className="badge-info text-center space-y-1">
-                <div className="name text-lg text-[#EDEFF3] font-['Space_Grotesk'] font-bold">
+              <div className="badge-info text-center space-y-1.5">
+                <div className="name text-xl font-bold font-['Space_Grotesk'] text-[#EDEFF3]">
                   {registeredGuest.name}
                 </div>
-                <div className="text-xs text-[#8B93A3] font-mono">{activeEvent.name}</div>
-                <div className="code-chip inline-block mt-2 font-mono text-sm tracking-wider font-bold">
+                <div className="text-xs font-mono text-[#8B93A3]">{activeEvent.name}</div>
+                <div className="code-chip inline-block mt-2 font-mono text-sm font-bold tracking-widest text-[#3ED98A]">
                   {registeredGuest.code}
                 </div>
                 <div>
                   <span
-                    className={`tag ${
+                    className={`tag inline-block ${
                       registeredGuest.category === 'VIP' ? 'tag-vip' : 'tag-regular'
                     }`}
                   >
@@ -143,15 +190,16 @@ export const PublicRegistrationView: React.FC = () => {
                   </span>
                 </div>
               </div>
+
             </div>
 
-            <p className="text-xs text-[#8B93A3] font-mono">
-              Show this QR code at the entrance gate on event day for instant check-in.
+            <p className="text-xs text-[#8B93A3] font-mono max-w-md mx-auto">
+              Show this QR pass or code chip <code className="text-[#3ED98A] font-bold">{registeredGuest.code}</code> at the gate entrance for express 2.5-second scan verification.
             </p>
 
             <button
               onClick={() => setRegisteredGuest(null)}
-              className="btn btn-ghost text-xs"
+              className="btn btn-ghost text-xs font-mono"
             >
               Register Another Guest
             </button>
