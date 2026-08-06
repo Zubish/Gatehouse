@@ -14,64 +14,111 @@ export const Topbar: React.FC = () => {
     setActiveEventId 
   } = useGatehouse();
 
-  const totalCount = guests.length;
-  const checkedInCount = guests.filter((g) => g.status === 'in').length;
-  const isLive = checkedInCount > 0;
+  const isPublicPage = activeTab === 'landing' || activeTab === 'login' || activeTab === 'register';
 
-  const roleTabs: { id: ViewRoute; label: string; count?: number }[] = [
-    { id: 'landing', label: 'Overview' },
+  const totalCount = guests.length;
+
+  const appTabs: { id: ViewRoute; label: string; count?: number }[] = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'guests', label: 'Guest List', count: totalCount },
     { id: 'checkin', label: 'Gate Scanner' },
     { id: 'walkin', label: 'Walk-In' },
     { id: 'venues', label: 'Book Venues' },
     { id: 'centre_portal', label: 'Venue Portal' },
-    { id: 'public_reg', label: 'Public Link (Path C)' },
+    { id: 'public_reg', label: 'Public Link' },
     { id: 'settings', label: 'Event Setup' },
   ];
 
+  // 1. PUBLIC MARKETING NAVBAR (Landing, Login, Register)
+  if (isPublicPage) {
+    return (
+      <header className="sticky top-0 z-50 bg-[#080c14]/90 backdrop-blur-md border-b border-white/10 py-4 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          
+          {/* Brand Logo */}
+          <div 
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => setActiveTab('landing')}
+          >
+            <div className="w-9 h-9 rounded-xl bg-[#3ED98A]/10 border border-[#3ED98A]/30 flex items-center justify-center group-hover:scale-105 transition-all">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3ED98A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <div>
+              <span className="font-['Space_Grotesk'] text-lg font-bold tracking-tight text-[#EDEFF3]">Gatehouse</span>
+              <span className="hidden sm:inline-block ml-2 text-[10px] font-mono text-[#3ED98A] bg-[#173226] px-2 py-0.5 rounded border border-[#3ED98A]/20">v2.0 Enterprise</span>
+            </div>
+          </div>
+
+          {/* Public Nav Links */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium font-['Inter'] text-[#94a3b8]">
+            <a href="#overview" onClick={() => setActiveTab('landing')} className="hover:text-white transition-colors">Overview</a>
+            <a href="#solutions" onClick={() => setActiveTab('landing')} className="hover:text-white transition-colors">Solutions</a>
+            <a href="#calculator" onClick={() => setActiveTab('landing')} className="hover:text-white transition-colors">Velocity Calculator</a>
+            <a href="#pricing" onClick={() => setActiveTab('landing')} className="hover:text-white transition-colors">Pricing</a>
+          </nav>
+
+          {/* Public Actions */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setActiveTab('login')}
+              className="text-xs font-mono font-semibold px-4 py-2 text-[#EDEFF3] hover:text-[#3ED98A] transition-colors"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className="btn btn-go text-xs font-mono font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-lg shadow-[#3ED98A]/20 hover:scale-105 transition-all"
+            >
+              Launch Control Room &rarr;
+            </button>
+          </div>
+
+        </div>
+      </header>
+    );
+  }
+
+  // 2. INTERNAL APP CONTROL ROOM HEADER (Authenticated Dashboard / Operations)
   return (
     <div className="topbar">
-      {/* Top Header Row with Role Switcher & Event Picker */}
       <div className="brand-row">
+        
+        {/* Brand & Live Light */}
         <div className="brand cursor-pointer" onClick={() => setActiveTab('landing')}>
-          <svg className="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3ED98A" strokeWidth="2">
+          <svg className="logo-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3ED98A" strokeWidth="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
-          <div className={`gate-light ${isLive ? 'live' : ''}`} id="gateLight" />
+          <div className="gate-light live" id="gateLight" />
           <div>
-            <h1 className="font-['Plus_Jakarta_Sans'] font-bold">Gatehouse</h1>
-            <div className="sub">Modern Event &amp; Access Control</div>
+            <h1 className="font-['Space_Grotesk'] font-bold text-base">Gatehouse Control Room</h1>
+            <div className="sub text-[10px]">Live Gate Access &amp; Operations</div>
           </div>
         </div>
 
-        {/* Role Switcher & Event Selector */}
+        {/* Role Switcher & Active Event Picker */}
         <div className="flex items-center gap-3">
           
           {/* Active Event Dropdown */}
-          <div className="text-right">
-            <select
-              value={activeEventId}
-              onChange={(e) => setActiveEventId(e.target.value)}
-              className="bg-[#151A22] border border-[#262D38] text-[#EDEFF3] rounded-md px-2.5 py-1 text-xs font-mono font-semibold focus:outline-none focus:border-[#3ED98A]"
-            >
-              {events.map((evt) => (
-                <option key={evt.id} value={evt.id}>
-                  {evt.name} ({evt.date})
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={activeEventId}
+            onChange={(e) => setActiveEventId(e.target.value)}
+            className="bg-[#151A22] border border-[#262D38] text-[#EDEFF3] rounded-md px-2.5 py-1.5 text-xs font-mono font-semibold focus:outline-none focus:border-[#3ED98A]"
+          >
+            {events.map((evt) => (
+              <option key={evt.id} value={evt.id}>
+                {evt.name} ({evt.date})
+              </option>
+            ))}
+          </select>
 
-          {/* Role Context Pill */}
+          {/* Role Pill */}
           <div className="flex items-center bg-[#151A22] border border-[#262D38] rounded-md p-0.5 text-xs font-mono">
             <button
-              onClick={() => {
-                setUserRole('organizer');
-                setActiveTab('dashboard');
-              }}
+              onClick={() => setUserRole('organizer')}
               className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
-                userRole === 'organizer' && activeTab !== 'landing' && activeTab !== 'login'
+                userRole === 'organizer'
                   ? 'bg-[#3ED98A] text-[#08150E]'
                   : 'text-[#8B93A3] hover:text-[#EDEFF3]'
               }`}
@@ -79,10 +126,7 @@ export const Topbar: React.FC = () => {
               Organizer
             </button>
             <button
-              onClick={() => {
-                setUserRole('centre');
-                setActiveTab('centre_portal');
-              }}
+              onClick={() => setUserRole('centre')}
               className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
                 userRole === 'centre'
                   ? 'bg-[#F0A93B] text-[#08150E]'
@@ -93,29 +137,28 @@ export const Topbar: React.FC = () => {
             </button>
           </div>
 
-          {/* Sign In / Register Button */}
+          {/* Exit / Public Website Button */}
           <button
-            onClick={() => setActiveTab('login')}
-            className="btn btn-ghost text-xs px-3 py-1 font-mono text-[#3ED98A] border-[#3ED98A]/30 hover:bg-[#173226]"
+            onClick={() => setActiveTab('landing')}
+            className="btn btn-ghost text-xs px-3 py-1 font-mono text-[#8B93A3] hover:text-white"
           >
-            Sign In &rarr;
+            Exit Control Room
           </button>
 
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Internal Operational Tabs */}
       <nav className="tabs">
-        {roleTabs.map((t) => (
+        {appTabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
             className={activeTab === t.id ? 'active' : ''}
-            data-view={t.id}
           >
             {t.label}
             {t.count !== undefined && (
-              <span className="count" id="tabGuestCount">
+              <span className="count">
                 ({t.count})
               </span>
             )}
