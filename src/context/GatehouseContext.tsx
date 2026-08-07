@@ -44,6 +44,9 @@ const TAB_PATH_MAP: Record<ViewTab, string> = {
   admin: '/admin',
 };
 
+/** List of public marketing views outside the main control room app */
+const PUBLIC_MARKETING_VIEWS: ViewTab[] = ['landing', 'login', 'register', 'centres'];
+
 interface GatehouseContextType {
   // Authentication & Session
   currentUser: User | null;
@@ -157,7 +160,9 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.getItem('gatehouse_auth_token')
   );
 
-  const isDemoSession = Boolean(currentUser?.email?.includes('demo') || currentUser?.email?.includes('venue'));
+  const isDemoSession = Boolean(
+    currentUser?.email?.includes('demo') || currentUser?.email?.includes('venue')
+  );
 
   const [eventCentres, setEventCentres] = useState<EventCentre[]>([]);
   const [selectedCentre, setSelectedCentre] = useState<EventCentre | null>(null);
@@ -174,8 +179,11 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Synchronize Tab with Browser History Stack (PushState & PopState)
   const changeTab = useCallback((newTab: ViewTab, pushHistory = true) => {
-    // Demo Mode Auto-Logout: If demo user navigates to landing or leaves control room, log out
-    if (isDemoSession && (newTab === 'landing' || newTab === 'login')) {
+    // Unconditional Demo Mode Auto-Logout: If user is in demo mode and returns to landing page or any public marketing view, immediately terminate demo session
+    if (
+      (currentUser?.email?.includes('demo') || currentUser?.email?.includes('venue')) &&
+      PUBLIC_MARKETING_VIEWS.includes(newTab)
+    ) {
       localStorage.removeItem('gatehouse_auth_token');
       setAuthToken(null);
       setCurrentUser(null);
@@ -187,7 +195,19 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (pushHistory && window.location.pathname !== path) {
       window.history.pushState({ tab: newTab }, '', path);
     }
-  }, [isDemoSession]);
+  }, [currentUser]);
+
+  // Reactive Watcher: Auto-logout demo user whenever activeTab is set to any public marketing page
+  useEffect(() => {
+    if (
+      (currentUser?.email?.includes('demo') || currentUser?.email?.includes('venue')) &&
+      PUBLIC_MARKETING_VIEWS.includes(activeTab)
+    ) {
+      localStorage.removeItem('gatehouse_auth_token');
+      setAuthToken(null);
+      setCurrentUser(null);
+    }
+  }, [activeTab, currentUser]);
 
   // Listen to Browser Back / Forward Button Navigation (popstate)
   useEffect(() => {
@@ -215,8 +235,20 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           });
           if (res.ok) {
             const data = await res.json();
-            setCurrentUser(data.user);
-            setUserRole(data.user.role);
+            // If initial load is a public marketing page and account is demo, purge token to start fresh
+            const currentPath = window.location.pathname;
+            const startingTab = ROUTE_PATH_MAP[currentPath] || 'landing';
+            if (
+              PUBLIC_MARKETING_VIEWS.includes(startingTab) &&
+              (data.user.email.includes('demo') || data.user.email.includes('venue'))
+            ) {
+              localStorage.removeItem('gatehouse_auth_token');
+              setAuthToken(null);
+              setCurrentUser(null);
+            } else {
+              setCurrentUser(data.user);
+              setUserRole(data.user.role);
+            }
           } else {
             localStorage.removeItem('gatehouse_auth_token');
             setAuthToken(null);
