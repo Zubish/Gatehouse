@@ -26,7 +26,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* BRAND COLUMN */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <img src="/logo.svg" alt="Gatehouse Logo" className="h-8 w-8 object-contain" />
+              <img src="/logo.png" alt="Gatehouse Logo" className="h-8 w-8 object-contain rounded-md" />
               <span className="font-heading text-xl font-bold tracking-tight text-foreground">
                 Gatehouse
               </span>

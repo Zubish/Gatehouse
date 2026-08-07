@@ -59,7 +59,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
           className="flex items-center gap-3 cursor-pointer group"
         >
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center transition-transform group-hover:scale-105">
-            <img src="/logo.svg" alt="Gatehouse Shield Logo" className="h-full w-full object-contain" />
+            <img src="/logo.png" alt="Gatehouse Shield Logo" className="h-full w-full object-contain rounded-lg" />
           </div>
           <span className="font-heading text-xl font-bold tracking-tight text-foreground">
             Gatehouse

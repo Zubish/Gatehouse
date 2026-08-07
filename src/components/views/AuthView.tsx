@@ -128,7 +128,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
           {/* Top Brand Logo */}
           <div className="relative z-10 space-y-8">
             <div className="flex items-center gap-3">
-              <img src="/logo.svg" alt="Gatehouse" className="h-10 w-10 drop-shadow-md" />
+              <img src="/logo.png" alt="Gatehouse" className="h-10 w-10 drop-shadow-md rounded-lg" />
               <span className="font-heading text-2xl font-bold tracking-tight text-foreground">
                 Gatehouse
               </span>
