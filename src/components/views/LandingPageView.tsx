@@ -12,6 +12,7 @@ import {
   Activity,
 } from 'lucide-react';
 import type { ViewRoute } from '../../types';
+import { Footer } from '../layout/Footer';
 
 interface LandingPageViewProps {
   onNavigate?: (view: ViewRoute) => void;
@@ -23,42 +24,47 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onNavigate }) 
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground space-y-16 lg:space-y-28 -mt-4 sm:-mt-6 lg:-mt-8 pb-12">
-      {/* HERO SECTION WITH IMAGE 1 */}
-      <HeroSection onNavigate={handleNav} />
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between -mt-4 sm:-mt-6 lg:-mt-8">
+      <main className="space-y-16 lg:space-y-28 pb-12">
+        {/* HERO SECTION WITH IMAGE 1 */}
+        <HeroSection onNavigate={handleNav} />
 
-      {/* MEET MUSA AI SECTION WITH IMAGE 5 */}
-      <MeetMusaAiSection onNavigate={handleNav} />
+        {/* MEET MUSA AI SECTION WITH IMAGE 5 */}
+        <MeetMusaAiSection onNavigate={handleNav} />
 
-      {/* PLATFORM OVERVIEW WITH IMAGE 2 */}
-      <PlatformOverviewSection />
+        {/* PLATFORM OVERVIEW WITH IMAGE 2 */}
+        <PlatformOverviewSection />
 
-      {/* SMART VENUE MANAGEMENT WITH IMAGE 3 */}
-      <SmartVenueSection />
+        {/* SMART VENUE MANAGEMENT WITH IMAGE 3 */}
+        <SmartVenueSection />
 
-      {/* FAST CHECK-IN & MOBILE SCANNER WITH IMAGE 4 */}
-      <MobileScannerSection />
+        {/* FAST CHECK-IN & MOBILE SCANNER WITH IMAGE 4 */}
+        <MobileScannerSection />
 
-      {/* ANALYTICS INTELLIGENCE WITH IMAGE 6 */}
-      <AnalyticsIntelligenceSection />
+        {/* ANALYTICS INTELLIGENCE WITH IMAGE 6 */}
+        <AnalyticsIntelligenceSection />
 
-      {/* ECOSYSTEM CONNECTED ARCHITECTURE WITH IMAGE 7 */}
-      <EcosystemSection />
+        {/* ECOSYSTEM CONNECTED ARCHITECTURE WITH IMAGE 7 */}
+        <EcosystemSection />
 
-      {/* EMOTIONAL BRANDING WITH IMAGE 8 */}
-      <EmotionalBrandingSection />
+        {/* EMOTIONAL BRANDING WITH IMAGE 8 */}
+        <EmotionalBrandingSection />
 
-      {/* ENTERPRISE INTEGRATIONS WITH IMAGE 9 */}
-      <EnterpriseIntegrationsSection />
+        {/* ENTERPRISE INTEGRATIONS WITH IMAGE 9 */}
+        <EnterpriseIntegrationsSection />
 
-      {/* AUDIENCE & 3 REGISTRATION PATHS */}
-      <AudienceAndPathsSection />
+        {/* AUDIENCE & 3 REGISTRATION PATHS */}
+        <AudienceAndPathsSection />
 
-      {/* INTERACTIVE CALCULATOR */}
-      <CalculatorSection />
+        {/* INTERACTIVE CALCULATOR */}
+        <CalculatorSection />
 
-      {/* CLOSING CTA WITH IMAGE 10 */}
-      <CTASection onNavigate={handleNav} />
+        {/* CLOSING CTA WITH IMAGE 10 */}
+        <CTASection onNavigate={handleNav} />
+      </main>
+
+      {/* REUSABLE ENTERPRISE FOOTER */}
+      <Footer onNavigate={handleNav} />
     </div>
   );
 };

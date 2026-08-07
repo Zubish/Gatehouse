@@ -1,36 +1,81 @@
-import React, { useState } from "react";
-import { useGatehouse } from "../../context/GatehouseContext";
-import type { EventCentre } from "../../types";
+import React, { useState, useMemo } from 'react';
+import { useGatehouse } from '../../context/GatehouseContext';
+import type { EventCentre, ViewRoute } from '../../types';
+import { Footer } from '../layout/Footer';
+import { MapPin, Search, Filter, Users, Building2, ShieldCheck } from 'lucide-react';
 
-export const EventCentresView: React.FC = () => {
+interface EventCentresViewProps {
+  onNavigate?: (view: ViewRoute) => void;
+}
+
+export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }) => {
   const { eventCentres, createBookingRequest } = useGatehouse();
 
-  // Search & Filter state
-  const [cityFilter, setCityFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedVenueModal, setSelectedVenueModal] =
-    useState<EventCentre | null>(null);
+  // Multi-Tiered Jiji.ng Style Filter State
+  const [selectedState, setSelectedState] = useState('all');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [maxCapacityFilter, setMaxCapacityFilter] = useState(25000);
 
-  // Booking Modal State
+  // Modals
+  const [selectedVenueModal, setSelectedVenueModal] = useState<EventCentre | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingVenue, setBookingVenue] = useState<EventCentre | null>(null);
-  const [eventName, setEventName] = useState("");
-  const [requestedDate, setRequestedDate] = useState("");
+  const [eventName, setEventName] = useState('');
+  const [requestedDate, setRequestedDate] = useState('');
   const [guestEstimate, setGuestEstimate] = useState(500);
-  const [bookingMessage, setBookingMessage] = useState("");
-  const [bookingSuccessMsg, setBookingSuccessMsg] = useState("");
+  const [bookingMessage, setBookingMessage] = useState('');
+  const [bookingSuccessMsg, setBookingSuccessMsg] = useState('');
 
-  const filteredCentres = eventCentres.filter((c) => {
-    const q = searchQuery.toLowerCase().trim();
-    const matchesQ =
-      !q ||
-      c.name.toLowerCase().includes(q) ||
-      c.address.toLowerCase().includes(q) ||
-      c.description.toLowerCase().includes(q);
-    const matchesCity =
-      cityFilter === "all" || c.city.toLowerCase() === cityFilter.toLowerCase();
-    return matchesQ && matchesCity;
-  });
+  // Jiji.ng Location Data Mapping
+  const locationMap: Record<string, string[]> = {
+    Lagos: ['All Neighborhoods', 'Ikeja', 'Victoria Island', 'Lekki', 'Ojuelegba', 'Yaba', 'Surulere', 'Ikoyi'],
+    Abuja: ['All Neighborhoods', 'Maitama', 'Gwarinpa', 'Wuse II', 'Asokoro', 'Jabi', 'Central Business District'],
+    'Port Harcourt': ['All Neighborhoods', 'GRA Phase 2', 'Trans Amadi', 'Old GRA', 'Rumuola'],
+    Ibadan: ['All Neighborhoods', 'Bodija', 'Ring Road', 'Jericho', 'Iyaganku'],
+  };
+
+  const categories = [
+    'All Categories',
+    'Grand Ballroom',
+    'Outdoor Garden',
+    'Conference Auditorium',
+    'Exhibition Hall',
+    'VIP Banquet Suite',
+  ];
+
+  // Perform multi-tiered search & filtering
+  const filteredCentres = useMemo(() => {
+    return eventCentres.filter((c) => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        c.name.toLowerCase().includes(q) ||
+        c.address.toLowerCase().includes(q) ||
+        c.city.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q) ||
+        c.amenities.some((a) => a.toLowerCase().includes(q));
+
+      const matchesState =
+        selectedState === 'all' || c.city.toLowerCase() === selectedState.toLowerCase();
+
+      const matchesNeighborhood =
+        selectedNeighborhood === 'all' ||
+        selectedNeighborhood === 'All Neighborhoods' ||
+        c.address.toLowerCase().includes(selectedNeighborhood.toLowerCase());
+
+      const matchesCategory =
+        selectedCategory === 'all' ||
+        selectedCategory === 'All Categories' ||
+        c.name.toLowerCase().includes(selectedCategory.toLowerCase()) ||
+        c.description.toLowerCase().includes(selectedCategory.toLowerCase());
+
+      const matchesCapacity = c.capacityMax <= maxCapacityFilter;
+
+      return matchesSearch && matchesState && matchesNeighborhood && matchesCategory && matchesCapacity;
+    });
+  }, [eventCentres, searchQuery, selectedState, selectedNeighborhood, selectedCategory, maxCapacityFilter]);
 
   const handleOpenBooking = (centre: EventCentre) => {
     setBookingVenue(centre);
@@ -47,108 +92,215 @@ export const EventCentresView: React.FC = () => {
       eventName,
       requestedDate,
       guestEstimate,
-      bookingMessage,
+      bookingMessage
     );
 
     setBookingSuccessMsg(
-      `Booking request sent to ${bookingVenue.name}! The venue management team will review and approve.`,
+      `Booking request sent to ${bookingVenue.name}! The venue management team will review and approve.`
     );
     setTimeout(() => {
-      setBookingSuccessMsg("");
+      setBookingSuccessMsg('');
       setShowBookingModal(false);
-      setEventName("");
-      setRequestedDate("");
-      setBookingMessage("");
+      setEventName('');
+      setRequestedDate('');
+      setBookingMessage('');
     }, 2000);
   };
 
   return (
-    <section className="view active" id="view-venues">
-      <div className="space-y-6">
-        {/* HEADER & FILTERS */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="section-title">Verified Event Centres Directory</h2>
-            <p className="text-xs font-mono text-[#8B93A3]">
-              Discover premium venues, inspect capacity limits, and send direct
-              booking requests.
-            </p>
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between -mt-4 sm:-mt-6 lg:-mt-8">
+      
+      {/* MAIN CONTENT AREA */}
+      <main className="mx-auto max-w-7xl px-6 py-10 w-full space-y-10">
+        
+        {/* PAGE HEADER */}
+        <div className="space-y-3 border-b border-border/40 pb-6">
+          <div className="flex items-center gap-2 text-xs font-mono text-[#5cbdb9] uppercase tracking-wider font-bold">
+            <Building2 className="h-4 w-4" />
+            Verified Event Centres Directory
           </div>
+          <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-foreground">
+            Find &amp; Book Verified Venues in Nigeria
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
+            Filter by state, neighborhood, capacity limits, and pricing. Send direct venue booking requests and issue delegated access passes instantly.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+        {/* JIJI.NG STYLE MULTI-TIERED SEARCH & FILTER BAR */}
+        <div className="rounded-3xl border border-border/60 bg-card/60 p-6 lg:p-8 card-glow space-y-6">
+          
+          {/* SEARCH INPUT ROW */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search by venue name or location…"
+              placeholder="Search by venue name, address, or neighborhood (e.g. Ojuelegba, Ikeja, Maitama)…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-xs text-xs font-mono"
+              className="w-full rounded-2xl border border-border/80 bg-navy-900 pl-12 pr-4 py-3.5 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
             />
-            <select
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-              className="w-auto text-xs font-mono bg-[#151A22] border border-[#262D38] text-[#EDEFF3] rounded-md px-3 py-2"
-            >
-              <option value="all">All Cities</option>
-              <option value="lagos">Lagos</option>
-              <option value="abuja">Abuja</option>
-              <option value="port harcourt">Port Harcourt</option>
-            </select>
           </div>
+
+          {/* FILTER DROPDOWNS ROW */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            
+            {/* STATE FILTER */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-mono text-muted-foreground uppercase font-bold flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-[#5cbdb9]" /> State / Region
+              </label>
+              <select
+                value={selectedState}
+                onChange={(e) => {
+                  setSelectedState(e.target.value);
+                  setSelectedNeighborhood('all');
+                }}
+                className="w-full rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+              >
+                <option value="all">All States / Cities</option>
+                <option value="Lagos">Lagos State</option>
+                <option value="Abuja">Abuja (FCT)</option>
+                <option value="Port Harcourt">Rivers (Port Harcourt)</option>
+                <option value="Ibadan">Oyo (Ibadan)</option>
+              </select>
+            </div>
+
+            {/* NEIGHBORHOOD FILTER */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-mono text-muted-foreground uppercase font-bold flex items-center gap-1.5">
+                <Filter className="h-3.5 w-3.5 text-[#38ef7d]" /> City / Neighborhood
+              </label>
+              <select
+                value={selectedNeighborhood}
+                onChange={(e) => setSelectedNeighborhood(e.target.value)}
+                disabled={selectedState === 'all'}
+                className="w-full rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
+              >
+                <option value="all">All Neighborhoods</option>
+                {selectedState !== 'all' &&
+                  locationMap[selectedState]?.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* CATEGORY FILTER */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-mono text-muted-foreground uppercase font-bold flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5 text-primary" /> Facility Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* CAPACITY FILTER */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs font-mono">
+                <span className="text-muted-foreground uppercase font-bold flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5 text-[#5cbdb9]" /> Max Capacity
+                </span>
+                <span className="text-[#5cbdb9] font-bold">{maxCapacityFilter.toLocaleString()} guests</span>
+              </div>
+              <input
+                type="range"
+                min="500"
+                max="25000"
+                step="500"
+                value={maxCapacityFilter}
+                onChange={(e) => setMaxCapacityFilter(Number(e.target.value))}
+                className="w-full accent-primary h-2 bg-navy-900 rounded-lg cursor-pointer"
+              />
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* RESULTS COUNT HEADER */}
+        <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+          <div>
+            Showing <strong className="text-foreground">{filteredCentres.length}</strong> verified event facilities
+          </div>
+          {(selectedState !== 'all' || searchQuery || selectedCategory !== 'all') && (
+            <button
+              onClick={() => {
+                setSelectedState('all');
+                setSelectedNeighborhood('all');
+                setSelectedCategory('all');
+                setSearchQuery('');
+                setMaxCapacityFilter(25000);
+              }}
+              className="text-[#5cbdb9] hover:underline cursor-pointer font-bold"
+            >
+              Reset Filters ✕
+            </button>
+          )}
         </div>
 
         {/* VENUES GRID */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredCentres.map((centre) => (
             <div
               key={centre.id}
-              className="glass-card rounded-xl border border-[#262D38] overflow-hidden flex flex-col justify-between hover:border-[#3ED98A]/50 transition-all group"
+              className="group flex flex-col justify-between rounded-3xl border border-border/60 bg-card/40 overflow-hidden transition-all hover:border-primary/40 card-glow"
             >
               <div>
-                {/* Photo Thumbnail */}
-                <div className="h-44 bg-[#1B2129] relative overflow-hidden">
+                {/* PHOTO THUMBNAIL */}
+                <div className="relative h-48 bg-navy-900 overflow-hidden">
                   <img
                     src={
                       centre.photos[0] ||
-                      "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80"
+                      'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'
                     }
                     alt={centre.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-[#0D1015]/80 backdrop-blur text-[10px] font-mono text-[#3ED98A] font-bold border border-[#3ED98A]/30">
-                    VERIFIED VENUE
+                  <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-navy-900/90 backdrop-blur text-[10px] font-mono text-[#38ef7d] font-bold border border-[#38ef7d]/30 flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3" /> VERIFIED VENUE
                   </div>
-                  <div className="absolute bottom-3 left-3 px-2 py-0.5 rounded bg-[#0D1015]/90 text-[11px] font-mono text-[#EDEFF3]">
+                  <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-lg bg-navy-900/90 text-xs font-mono text-foreground border border-border/60">
                     📍 {centre.city}
                   </div>
                 </div>
 
-                {/* Content */}
-                <div className="p-5 space-y-3">
-                  <h3 className="text-lg font-bold font-['Space_Grotesk'] text-[#EDEFF3] group-hover:text-[#3ED98A] transition-colors">
+                {/* CARD CONTENT */}
+                <div className="p-6 space-y-3">
+                  <h3 className="font-heading text-xl font-bold text-foreground group-hover:text-[#5cbdb9] transition-colors">
                     {centre.name}
                   </h3>
-                  <p className="text-xs text-[#8B93A3] line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                     {centre.description}
                   </p>
 
-                  <div className="text-xs font-mono text-[#94a3b8] pt-2 border-t border-[#262D38]">
-                    Capacity:{" "}
-                    <strong className="text-white">
-                      {centre.capacityMin} -{" "}
-                      {centre.capacityMax.toLocaleString()} guests
+                  <div className="flex items-center justify-between text-xs font-mono pt-3 border-t border-border/40">
+                    <span className="text-muted-foreground">Capacity:</span>
+                    <strong className="text-foreground">
+                      {centre.capacityMin} - {centre.capacityMax.toLocaleString()} guests
                     </strong>
                   </div>
 
-                  <div className="text-xs font-mono text-[#F0A93B] font-semibold">
-                    {centre.priceRange}
+                  <div className="text-xs font-mono text-[#5cbdb9] font-bold">
+                    Price: {centre.priceRange}
                   </div>
 
-                  {/* Amenities */}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  {/* AMENITIES */}
+                  <div className="flex flex-wrap gap-1.5 pt-2">
                     {centre.amenities.map((a, i) => (
                       <span
                         key={i}
-                        className="text-[10px] font-mono bg-[#1B2129] text-[#8B93A3] px-2 py-0.5 rounded border border-[#262D38]"
+                        className="text-[10px] font-mono bg-navy-900 text-muted-foreground px-2.5 py-0.5 rounded-md border border-border/60"
                       >
                         {a}
                       </span>
@@ -157,17 +309,17 @@ export const EventCentresView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card Actions */}
-              <div className="p-5 pt-0 grid grid-cols-2 gap-2">
+              {/* CARD ACTIONS */}
+              <div className="p-6 pt-0 grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setSelectedVenueModal(centre)}
-                  className="btn btn-ghost text-xs font-mono"
+                  className="rounded-full border border-border/60 bg-card px-4 py-2.5 text-xs font-mono text-foreground hover:bg-secondary cursor-pointer transition-colors"
                 >
                   View Details
                 </button>
                 <button
                   onClick={() => handleOpenBooking(centre)}
-                  className="btn btn-go text-xs font-mono font-bold"
+                  className="rounded-full bg-primary px-4 py-2.5 text-xs font-mono font-bold text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-sm transition-colors"
                 >
                   Request Booking
                 </button>
@@ -179,20 +331,20 @@ export const EventCentresView: React.FC = () => {
         {/* VENUE DETAIL MODAL */}
         {selectedVenueModal && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="glass-card max-w-xl w-full rounded-2xl border border-[#3ED98A]/30 overflow-hidden space-y-4 p-6 bg-[#0f172a]">
-              <div className="flex items-center justify-between border-b border-[#262D38] pb-3">
-                <h3 className="text-xl font-bold font-['Space_Grotesk'] text-[#EDEFF3]">
+            <div className="max-w-xl w-full rounded-3xl border border-border/60 bg-navy-900 p-6 lg:p-8 space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-border/40 pb-4">
+                <h3 className="font-heading text-2xl font-bold text-foreground">
                   {selectedVenueModal.name}
                 </h3>
                 <button
                   onClick={() => setSelectedVenueModal(null)}
-                  className="text-sm font-mono text-[#8B93A3] hover:text-white"
+                  className="text-xs font-mono text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   ✕ Close
                 </button>
               </div>
 
-              <div className="h-56 rounded-xl overflow-hidden bg-[#1B2129]">
+              <div className="h-60 rounded-2xl overflow-hidden bg-navy-800">
                 <img
                   src={selectedVenueModal.photos[0]}
                   alt={selectedVenueModal.name}
@@ -200,34 +352,23 @@ export const EventCentresView: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-2 text-xs text-[#94a3b8]">
-                <p>
-                  <strong>Address:</strong> {selectedVenueModal.address},{" "}
-                  {selectedVenueModal.city}
-                </p>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <p><strong className="text-foreground">Address:</strong> {selectedVenueModal.address}, {selectedVenueModal.city}</p>
                 <p>{selectedVenueModal.description}</p>
-                <p>
-                  <strong>Capacity:</strong> {selectedVenueModal.capacityMin} to{" "}
-                  {selectedVenueModal.capacityMax.toLocaleString()} guests
-                </p>
-                <p>
-                  <strong>Price Range:</strong>{" "}
-                  <span className="text-[#F0A93B] font-bold">
-                    {selectedVenueModal.priceRange}
-                  </span>
-                </p>
+                <p><strong className="text-foreground">Capacity Limit:</strong> {selectedVenueModal.capacityMin} to {selectedVenueModal.capacityMax.toLocaleString()} guests</p>
+                <p><strong className="text-foreground">Pricing:</strong> <span className="text-[#5cbdb9] font-bold">{selectedVenueModal.priceRange}</span></p>
               </div>
 
               <div className="pt-4 flex gap-3">
                 <button
                   onClick={() => setSelectedVenueModal(null)}
-                  className="btn btn-ghost flex-1 text-xs font-mono"
+                  className="rounded-full border border-border/60 bg-card flex-1 py-3 text-xs font-mono text-foreground cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleOpenBooking(selectedVenueModal)}
-                  className="btn btn-go flex-1 text-xs font-mono font-bold"
+                  className="rounded-full bg-primary flex-1 py-3 text-xs font-mono font-bold text-primary-foreground cursor-pointer"
                 >
                   Book Venue Now &rarr;
                 </button>
@@ -238,56 +379,57 @@ export const EventCentresView: React.FC = () => {
 
         {/* BOOKING REQUEST MODAL */}
         {showBookingModal && bookingVenue && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="glass-card max-w-md w-full rounded-2xl border border-[#3ED98A]/50 p-6 bg-[#0f172a] space-y-4">
-              <div className="flex items-center justify-between border-b border-[#262D38] pb-3">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="max-w-md w-full rounded-3xl border border-border/60 bg-navy-900 p-6 lg:p-8 space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-border/40 pb-4">
                 <div>
-                  <h3 className="text-lg font-bold font-['Space_Grotesk'] text-white">
+                  <h3 className="font-heading text-xl font-bold text-foreground">
                     Request Booking: {bookingVenue.name}
                   </h3>
-                  <div className="text-[11px] font-mono text-[#3ED98A]">
-                    {bookingVenue.city} • Capacity Max:{" "}
-                    {bookingVenue.capacityMax.toLocaleString()}
+                  <div className="text-xs font-mono text-[#5cbdb9]">
+                    {bookingVenue.city} • Capacity: {bookingVenue.capacityMax.toLocaleString()}
                   </div>
                 </div>
                 <button
                   onClick={() => setShowBookingModal(false)}
-                  className="text-xs font-mono text-[#8B93A3] hover:text-white"
+                  className="text-xs font-mono text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   ✕
                 </button>
               </div>
 
               {bookingSuccessMsg ? (
-                <div className="p-4 rounded-xl bg-[#173226] border border-[#3ED98A] text-[#3ED98A] text-xs font-mono text-center font-bold">
+                <div className="p-4 rounded-2xl bg-[#38ef7d]/10 border border-[#38ef7d] text-[#38ef7d] text-xs font-mono text-center font-bold">
                   {bookingSuccessMsg}
                 </div>
               ) : (
-                <form onSubmit={handleSendBookingRequest} className="space-y-3">
-                  <div className="field">
-                    <label>Event Name *</label>
+                <form onSubmit={handleSendBookingRequest} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-muted-foreground font-bold">Event Name *</label>
                     <input
                       type="text"
                       placeholder="e.g. Lagos Tech Summit 2026"
                       value={eventName}
                       onChange={(e) => setEventName(e.target.value)}
                       required
+                      className="w-full rounded-xl border border-border/80 bg-navy-800 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
                   </div>
 
-                  <div className="field">
-                    <label>Requested Event Date *</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-muted-foreground font-bold">Requested Event Date *</label>
                     <input
                       type="text"
                       placeholder="e.g. Sat, 15 Nov 2026"
                       value={requestedDate}
                       onChange={(e) => setRequestedDate(e.target.value)}
                       required
+                      className="w-full rounded-xl border border-border/80 bg-navy-800 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
                   </div>
 
-                  <div className="field">
-                    <label>Estimated Guest Count</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-muted-foreground font-bold">Estimated Guest Count</label>
                     <input
                       type="number"
                       min={100}
@@ -295,16 +437,18 @@ export const EventCentresView: React.FC = () => {
                       value={guestEstimate}
                       onChange={(e) => setGuestEstimate(Number(e.target.value))}
                       required
+                      className="w-full rounded-xl border border-border/80 bg-navy-800 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
                   </div>
 
-                  <div className="field">
-                    <label>Special Instructions / Requirements</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-muted-foreground font-bold">Special Instructions</label>
                     <textarea
                       rows={3}
                       placeholder="Specify stage setup, VIP lounge access, sound setup..."
                       value={bookingMessage}
                       onChange={(e) => setBookingMessage(e.target.value)}
+                      className="w-full rounded-xl border border-border/80 bg-navy-800 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
                   </div>
 
@@ -312,15 +456,15 @@ export const EventCentresView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowBookingModal(false)}
-                      className="btn btn-ghost flex-1 text-xs font-mono"
+                      className="rounded-full border border-border/60 bg-card flex-1 py-3 text-xs font-mono text-foreground cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="btn btn-go flex-1 text-xs font-mono font-bold shadow-lg shadow-[#3ED98A]/20"
+                      className="rounded-full bg-primary flex-1 py-3 text-xs font-mono font-bold text-primary-foreground cursor-pointer"
                     >
-                      Send Request to Venue &rarr;
+                      Send Request &rarr;
                     </button>
                   </div>
                 </form>
@@ -328,7 +472,12 @@ export const EventCentresView: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
-    </section>
+
+      </main>
+
+      {/* REUSABLE ENTERPRISE FOOTER */}
+      <Footer onNavigate={onNavigate} />
+
+    </div>
   );
 };

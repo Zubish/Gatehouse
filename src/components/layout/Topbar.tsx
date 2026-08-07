@@ -10,7 +10,8 @@ interface TopbarProps {
 export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
   const { currentUser, logoutUser } = useGatehouse();
 
-  const isPublicMarketingPage = ['landing', 'login', 'register'].includes(currentView);
+  // Show public landing page navbar for landing page AND public venue directory
+  const isPublicMarketingPage = ['landing', 'login', 'register', 'centres'].includes(currentView);
 
   const scrollToSection = (sectionId: string) => {
     if (currentView !== 'landing') {
@@ -28,13 +29,13 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
-        {/* BRAND LOGO WITH CUSTOM IMAGE */}
+        {/* BRAND LOGO WITH TRANSPARENT SVG */}
         <div
           onClick={() => onNavigate('landing')}
           className="flex items-center gap-3 cursor-pointer group"
         >
-          <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-navy-800 border border-border/60 p-1 transition-transform group-hover:scale-105 shadow-md">
-            <img src="/logo.png" alt="Gatehouse Logo" className="h-full w-full object-contain rounded-lg" />
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center transition-transform group-hover:scale-105">
+            <img src="/logo.svg" alt="Gatehouse Shield Logo" className="h-full w-full object-contain" />
           </div>
           <span className="font-heading text-xl font-bold tracking-tight text-foreground">
             Gatehouse
@@ -64,7 +65,11 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
             </button>
             <button
               onClick={() => onNavigate('centres')}
-              className="transition-colors hover:text-foreground cursor-pointer"
+              className={`transition-colors cursor-pointer ${
+                currentView === 'centres'
+                  ? 'text-[#5cbdb9] font-bold'
+                  : 'hover:text-foreground'
+              }`}
             >
               Venues Directory
             </button>
