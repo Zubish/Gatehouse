@@ -54,19 +54,34 @@ export function App() {
         {currentView === 'admin' && <AdminPortalView />}
       </main>
 
-      {/* COMPACT FOOTER FOR INTERNAL APP CONTROL ROOM VIEWS */}
+      {/* FOOTER rendering rules for auth pages and control room views */}
       {!['landing', 'centres'].includes(currentView) && (
-        <footer className="border-t border-border/40 py-8 text-center text-xs font-mono text-muted-foreground space-y-2">
-          <div className="flex justify-center items-center gap-4 flex-wrap">
-            <span>Gatehouse Access Control OS</span>
-            <span>•</span>
-            <span>Neon PostgreSQL + Vercel Serverless</span>
-            <span>•</span>
-            <span>Musa AI Gatekeeper Engine</span>
-          </div>
-          <div>
-            &copy; {new Date().getFullYear()} Gatehouse. Built for event security &amp; venue control.
-          </div>
+        <footer className="border-t border-border/40 py-6 text-center text-xs font-mono text-muted-foreground space-y-2">
+          {['login', 'register'].includes(currentView) ? (
+            /* MINIMAL 1-LINE LEGAL BAR FOR AUTH PAGES */
+            <div className="text-muted-foreground">
+              &copy; {new Date().getFullYear()} Gatehouse Inc. All rights reserved. &bull;{' '}
+              <a href="#" className="hover:underline hover:text-foreground">Terms of Service</a> &bull;{' '}
+              <a href="#" className="hover:underline hover:text-foreground">Privacy Policy</a>
+            </div>
+          ) : (
+            /* CLEAN ENTERPRISE STATUS BAR FOR CONTROL ROOM VIEWS */
+            <div className="space-y-1">
+              <div className="flex justify-center items-center gap-3 flex-wrap font-bold text-foreground">
+                <span>Gatehouse Enterprise OS</span>
+                <span>&bull;</span>
+                <span>Secure Access &amp; Venue Operations</span>
+                <span>&bull;</span>
+                <span className="text-[#38ef7d] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#38ef7d] animate-pulse" />
+                  All Systems Operational
+                </span>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                &copy; {new Date().getFullYear()} Gatehouse Inc. Built for event security &amp; venue control.
+              </div>
+            </div>
+          )}
         </footer>
       )}
     </div>
