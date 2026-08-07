@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGatehouse } from '../../context/GatehouseContext';
 import type { ViewRoute } from '../../types';
 import {
@@ -13,6 +13,8 @@ import {
   ShieldAlert,
   LogOut,
   Home,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -22,6 +24,13 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
   const { currentUser, logoutUser } = useGatehouse();
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem('gatehouse_sidebar_collapsed') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('gatehouse_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+  }, [isCollapsed]);
 
   // Primary Control Room Navigation Items
   const navItems = [
@@ -87,40 +96,50 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
   );
 
   return (
-    <aside className="w-64 shrink-0 border-r border-border/40 bg-navy-900/95 backdrop-blur-xl flex flex-col justify-between min-h-screen p-4 space-y-6">
-      
+    <aside
+      className={`shrink-0 border-r border-border/40 bg-navy-900/95 backdrop-blur-xl flex flex-col justify-between min-h-screen p-3 space-y-6 transition-all duration-300 ${
+        isCollapsed ? 'w-18' : 'w-64'
+      }`}
+    >
       {/* NAVIGATION ITEMS LIST */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         
-        {/* BRAND LOGO HEADER IN SIDEBAR */}
-        <div
-          onClick={() => onNavigate('landing')}
-          className="flex items-center gap-3 px-3 py-2 cursor-pointer group border-b border-border/40 pb-4"
-        >
-          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center transition-transform group-hover:scale-105">
-            <img src="/logo.png" alt="Gatehouse Logo" className="h-full w-full object-contain rounded-lg" />
-          </div>
-          <span className="font-heading text-lg font-bold tracking-tight text-foreground">
-            Gatehouse
-          </span>
+        {/* COLLAPSE / EXPAND TOGGLE BAR (NO LOGO) */}
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} border-b border-border/40 pb-3 pt-1`}>
+          {!isCollapsed && (
+            <div className="px-2">
+              <span className="text-xs font-bold font-heading uppercase text-foreground tracking-wider">
+                Control Room
+              </span>
+            </div>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+            className="p-2 rounded-xl bg-card/60 hover:bg-card border border-border/60 text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm"
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
         </div>
 
-        {/* WORKSPACE USER HEADER */}
-        <div className="px-3 py-1 space-y-1">
-          <div className="text-[10px] font-mono text-muted-foreground uppercase font-bold tracking-wider">
-            Workspace Control Room
+        {/* WORKSPACE USER HEADER (EXPANDED ONLY) */}
+        {!isCollapsed && (
+          <div className="px-2 space-y-0.5">
+            <div className="text-[10px] font-mono text-muted-foreground uppercase font-bold tracking-wider">
+              Active Organization
+            </div>
+            <div className="text-sm font-bold font-heading text-foreground truncate">
+              {currentUser ? currentUser.name : 'Guest Account'}
+            </div>
+            <div className="text-xs font-mono text-[#5cbdb9] font-bold">
+              {currentUser?.role === 'centre'
+                ? '🏢 Venue Manager'
+                : currentUser?.role === 'admin'
+                ? '⚡ System Admin'
+                : '🎟️ Event Host'}
+            </div>
           </div>
-          <div className="text-sm font-bold font-heading text-foreground truncate">
-            {currentUser ? currentUser.name : 'Guest User'}
-          </div>
-          <div className="text-xs font-mono text-[#5cbdb9] font-bold">
-            {currentUser?.role === 'centre'
-              ? '🏢 Venue Manager'
-              : currentUser?.role === 'admin'
-              ? '⚡ System Admin'
-              : '🎟️ Event Host'}
-          </div>
-        </div>
+        )}
 
         {/* NAV LINKS */}
         <nav className="space-y-1">
@@ -131,40 +150,48 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-mono font-bold transition-all cursor-pointer ${
+                title={isCollapsed ? item.label : undefined}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-mono font-bold transition-all cursor-pointer ${
+                  isCollapsed ? 'justify-center' : ''
+                } ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40'
                     : 'text-muted-foreground hover:text-foreground hover:bg-card/60'
                 }`}
               >
-                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
-                <span className="truncate">{item.label}</span>
+                <Icon className={`h-4.5 w-4.5 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
               </button>
             );
           })}
 
           <button
             onClick={() => onNavigate('landing')}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-card/60 transition-all cursor-pointer mt-4"
+            title={isCollapsed ? 'Public Landing Page' : undefined}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-card/60 transition-all cursor-pointer mt-4 ${
+              isCollapsed ? 'justify-center' : ''
+            }`}
           >
-            <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="truncate">Public Home</span>
+            <Home className="h-4.5 w-4.5 shrink-0 text-muted-foreground" />
+            {!isCollapsed && <span className="truncate">Public Landing Page</span>}
           </button>
         </nav>
 
       </div>
 
       {/* FOOTER USER ACCOUNT BAR */}
-      <div className="pt-4 border-t border-border/40 space-y-3">
-        <div className="p-3 rounded-2xl bg-card/60 border border-border/60 flex items-center justify-between">
-          <div className="truncate pr-2">
-            <div className="text-xs font-bold text-foreground truncate">
-              {currentUser?.name || 'Account'}
+      <div className="pt-3 border-t border-border/40 space-y-3">
+        <div className={`p-2.5 rounded-2xl bg-card/60 border border-border/60 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!isCollapsed && (
+            <div className="truncate pr-2">
+              <div className="text-xs font-bold text-foreground truncate">
+                {currentUser?.name || 'User Account'}
+              </div>
+              <div className="text-[10px] font-mono text-muted-foreground truncate">
+                {currentUser?.email || 'Active Session'}
+              </div>
             </div>
-            <div className="text-[10px] font-mono text-muted-foreground truncate">
-              {currentUser?.email || 'Not signed in'}
-            </div>
-          </div>
+          )}
           <button
             onClick={logoutUser}
             title="Sign Out"
