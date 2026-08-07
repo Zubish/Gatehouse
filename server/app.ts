@@ -610,17 +610,21 @@ app.patch("/api/guests/:id/undo", async (req, res) => {
   }
 });
 
-// ---------------- HARDWARE TURNSTILE RELAY ----------------
+// ---------------- ADMIN DATA PURGE (FRESH CLEAN SYSTEM) ----------------
 
-app.post("/api/hardware/gate-turnstile/unlock", async (req, res) => {
+app.post("/api/admin/purge-data", async (req, res) => {
   try {
-    const { gateLaneId, passCode, guestId } = req.body;
+    await prisma.checkinLog.deleteMany({});
+    await prisma.guest.deleteMany({});
+    await prisma.delegation.deleteMany({});
+    await prisma.booking.deleteMany({});
+    await prisma.event.deleteMany({});
+    await prisma.eventCentre.deleteMany({});
+    await prisma.user.deleteMany({});
+
     res.json({
-      status: "unlocked",
-      lane: gateLaneId || "Gate Lane #01",
-      pulseDurationMs: 3000,
-      timestamp: new Date().toISOString(),
-      message: `Physical turnstile barrier unlocked for code ${passCode || guestId}.`,
+      success: true,
+      message: "All users and platform records erased. System clean.",
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

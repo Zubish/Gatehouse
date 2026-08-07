@@ -63,63 +63,7 @@ const DEFAULT_EVENT: EventItem = {
   centreName: 'Eko Convention Centre (Grand Ballroom)',
 };
 
-const INITIAL_GUESTS: Guest[] = [
-  {
-    id: 'g_1',
-    name: 'Babajide Sanwo-Olu',
-    email: 'b.sanwoolu@lagosstate.gov.ng',
-    phone: '08023334444',
-    category: 'VIP',
-    code: 'VIP-7821',
-    qrPayload: 'GH:VIP-7821:evt_2026_01:sig_991823a',
-    status: 'out',
-    organization: 'Lagos State Government',
-  },
-  {
-    id: 'g_2',
-    name: 'Dr. Bosun Tijani',
-    email: 'bosun@fmcide.gov.ng',
-    phone: '08031112222',
-    category: 'VIP',
-    code: 'VIP-9012',
-    qrPayload: 'GH:VIP-9012:evt_2026_01:sig_338127b',
-    status: 'out',
-    organization: 'Federal Ministry of Comms & Tech',
-  },
-  {
-    id: 'g_3',
-    name: 'Amina Mohammed',
-    email: 'amina@un.org',
-    phone: '08056667777',
-    category: 'VIP',
-    code: 'VIP-4410',
-    qrPayload: 'GH:VIP-4410:evt_2026_01:sig_110293c',
-    status: 'out',
-    organization: 'United Nations',
-  },
-  {
-    id: 'g_4',
-    name: 'Oluwaseun Adeleke',
-    email: 'seun@flutterwave.com',
-    phone: '08129990000',
-    category: 'Regular',
-    code: 'REG-1049',
-    qrPayload: 'GH:REG-1049:evt_2026_01:sig_772819d',
-    status: 'out',
-    organization: 'Flutterwave Nigeria',
-  },
-  {
-    id: 'g_5',
-    name: 'Chioma Nnadi',
-    email: 'chioma@paystack.com',
-    phone: '07038881111',
-    category: 'Regular',
-    code: 'REG-2204',
-    qrPayload: 'GH:REG-2204:evt_2026_01:sig_661928e',
-    status: 'out',
-    organization: 'Paystack Payments',
-  },
-];
+const INITIAL_GUESTS: Guest[] = [];
 
 const INITIAL_CENTRES: EventCentre[] = [
   {
