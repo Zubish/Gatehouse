@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGatehouse } from '../../context/GatehouseContext';
+import { ShieldCheck, ArrowRight } from 'lucide-react';
 import type { ViewRoute } from '../../types';
 
 interface TopbarProps {
@@ -13,111 +14,114 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
   const isPublicMarketingPage = ['landing', 'login', 'register'].includes(currentView);
 
   return (
-    <header className="brand-bar">
-      <div className="brand-inner flex items-center justify-between w-full max-w-7xl mx-auto px-4 py-3">
+    <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-6 py-3.5 sm:flex sm:flex-wrap sm:justify-between">
         
         {/* LOGO */}
         <div
-          className="brand flex items-center gap-3 cursor-pointer group"
           onClick={() => onNavigate('landing')}
+          className="flex min-w-0 items-center gap-2.5 cursor-pointer group"
         >
-          <div className="logo-box relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#3ED98A] to-[#173226] p-0.5 flex items-center justify-center shadow-lg shadow-[#3ED98A]/20 group-hover:scale-105 transition-transform">
-            <div className="w-full h-full bg-[#080c14] rounded-[10px] flex items-center justify-center">
-              <span className="font-mono text-lg font-black text-[#3ED98A] tracking-tighter">GH</span>
-            </div>
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/20 text-primary transition-transform group-hover:scale-105">
+            <ShieldCheck className="h-5 w-5" />
           </div>
-
-          <div className="flex flex-col">
-            <span className="font-['Space_Grotesk'] text-lg font-black tracking-tight text-[#EDEFF3] flex items-center gap-1.5">
-              GATEHOUSE
-              <span className="text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-[#173226] text-[#3ED98A] border border-[#3ED98A]/30">
-                PRO 2.0
-              </span>
+          <div className="flex min-w-0 items-baseline gap-2">
+            <span className="truncate font-heading text-lg font-semibold tracking-tight text-foreground">
+              Gatehouse
             </span>
-            <span className="text-[10px] font-mono text-[#8B93A3] tracking-widest uppercase">
-              Access Control &amp; Venue OS
+            <span className="hidden rounded-full border border-border/60 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground sm:inline">
+              v2.0 Enterprise
             </span>
           </div>
         </div>
 
         {/* PUBLIC MARKETING NAVIGATION */}
         {isPublicMarketingPage ? (
-          <div className="hidden md:flex items-center gap-6 text-xs font-mono">
-            <button onClick={() => onNavigate('landing')} className="hover:text-[#3ED98A] text-[#EDEFF3] transition-colors">Overview</button>
-            <button onClick={() => onNavigate('centres')} className="hover:text-[#3ED98A] text-[#94a3b8] transition-colors">Venues Directory</button>
-            <button onClick={() => onNavigate('login')} className="hover:text-[#3ED98A] text-[#94a3b8] transition-colors">Organizers</button>
-          </div>
+          <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex">
+            <button onClick={() => onNavigate('landing')} className="transition-colors hover:text-foreground cursor-pointer">
+              Overview
+            </button>
+            <button onClick={() => onNavigate('centres')} className="transition-colors hover:text-foreground cursor-pointer">
+              Venues Directory
+            </button>
+            <button onClick={() => onNavigate('public-reg')} className="transition-colors hover:text-foreground cursor-pointer">
+              Public Link
+            </button>
+            <button onClick={() => onNavigate('login')} className="transition-colors hover:text-foreground cursor-pointer">
+              Organizers
+            </button>
+          </nav>
         ) : (
           /* AUTHENTICATED INTERNAL CONTROL ROOM TABS */
-          <nav className="hidden lg:flex items-center gap-1 bg-[#0f172a]/90 p-1.5 rounded-xl border border-[#262D38] text-xs font-mono">
+          <nav className="hidden lg:flex items-center gap-1 bg-navy-800/80 p-1.5 rounded-xl border border-border/60 text-xs font-mono">
             <button
               onClick={() => onNavigate('dashboard')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentView === 'dashboard' ? 'bg-[#173226] text-[#3ED98A] font-bold border border-[#3ED98A]/30' : 'text-[#8B93A3] hover:text-white'
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                currentView === 'dashboard' ? 'bg-primary text-primary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Dashboard
             </button>
             <button
               onClick={() => onNavigate('guests')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentView === 'guests' ? 'bg-[#173226] text-[#3ED98A] font-bold border border-[#3ED98A]/30' : 'text-[#8B93A3] hover:text-white'
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                currentView === 'guests' ? 'bg-primary text-primary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Guest List
             </button>
             <button
               onClick={() => onNavigate('checkin')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentView === 'checkin' ? 'bg-[#173226] text-[#3ED98A] font-bold border border-[#3ED98A]/30' : 'text-[#8B93A3] hover:text-white'
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                currentView === 'checkin' ? 'bg-primary text-primary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Gate Scanner
             </button>
             <button
               onClick={() => onNavigate('walkin')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentView === 'walkin' ? 'bg-[#173226] text-[#3ED98A] font-bold border border-[#3ED98A]/30' : 'text-[#8B93A3] hover:text-white'
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                currentView === 'walkin' ? 'bg-primary text-primary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Walk-In
             </button>
             <button
               onClick={() => onNavigate('centres')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentView === 'centres' ? 'bg-[#173226] text-[#3ED98A] font-bold border border-[#3ED98A]/30' : 'text-[#8B93A3] hover:text-white'
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                currentView === 'centres' ? 'bg-primary text-primary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Book Venues
             </button>
             <button
               onClick={() => onNavigate('centre-dash')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentView === 'centre-dash' ? 'bg-[#173226] text-[#3ED98A] font-bold border border-[#3ED98A]/30' : 'text-[#8B93A3] hover:text-white'
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                currentView === 'centre-dash' ? 'bg-primary text-primary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Venue Portal
             </button>
             <button
               onClick={() => onNavigate('public-reg')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentView === 'public-reg' ? 'bg-[#173226] text-[#3ED98A] font-bold border border-[#3ED98A]/30' : 'text-[#8B93A3] hover:text-white'
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                currentView === 'public-reg' ? 'bg-primary text-primary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Public Link
             </button>
             <button
               onClick={() => onNavigate('settings')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentView === 'settings' ? 'bg-[#173226] text-[#3ED98A] font-bold border border-[#3ED98A]/30' : 'text-[#8B93A3] hover:text-white'
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                currentView === 'settings' ? 'bg-primary text-primary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Settings
             </button>
             <button
               onClick={() => onNavigate('admin')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentView === 'admin' ? 'bg-[#331B1D] text-[#E5555C] font-bold border border-[#E5555C]/40' : 'text-[#8B93A3] hover:text-white'
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                currentView === 'admin' ? 'bg-destructive text-destructive-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Admin
@@ -126,36 +130,38 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
         )}
 
         {/* AUTH BUTTONS OR USER BADGE */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           {currentUser ? (
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-bold text-[#EDEFF3]">{currentUser.name}</span>
-                <span className="text-[10px] font-mono text-[#3ED98A]">
+                <span className="text-xs font-bold text-foreground">{currentUser.name}</span>
+                <span className="text-[10px] font-mono text-[#5cbdb9]">
                   {currentUser.role === 'centre' ? '🏢 Event Facility' : '🎟️ Event Host'}
                 </span>
               </div>
 
               <button
                 onClick={logoutUser}
-                className="btn btn-ghost btn-sm font-mono text-xs text-[#E5555C] border-[#E5555C]/30 hover:bg-[#331B1D]"
+                className="btn btn-ghost btn-sm font-mono text-xs text-[#e5555c] border-[#e5555c]/30 hover:bg-[#331b1d]"
               >
                 Sign Out
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 font-mono text-xs">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => onNavigate('login')}
-                className="px-3 py-2 rounded-lg text-[#EDEFF3] hover:text-white hover:bg-[#1B2129] transition-colors"
+                className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline cursor-pointer"
               >
-                Sign In
+                Sign in
               </button>
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="btn btn-go btn-sm font-bold shadow-lg shadow-[#3ED98A]/20"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md cursor-pointer"
               >
-                Launch Control Room &rarr;
+                <span className="hidden sm:inline">Launch Control Room</span>
+                <span className="sm:hidden">Launch</span>
+                <ArrowRight className="h-4 w-4 shrink-0" />
               </button>
             </div>
           )}
