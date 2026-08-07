@@ -76,7 +76,7 @@ function HeroSection({ onNavigate }: { onNavigate: (v: ViewRoute) => void }) {
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-secondary/60 px-3.5 py-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 <span className="h-2 w-2 rounded-full bg-[#5cbdb9] animate-ping" />
-                Gatehouse 2.0 · 3-Sided Event Access &amp; Venue Control
+                3-Sided Event Access &amp; Venue Control
               </span>
 
               <h1 className="mt-6 font-heading text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
@@ -96,15 +96,15 @@ function HeroSection({ onNavigate }: { onNavigate: (v: ViewRoute) => void }) {
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <button
-                onClick={() => onNavigate('dashboard')}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md cursor-pointer group"
+                onClick={() => onNavigate('login')}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md cursor-pointer group"
               >
-                Get Started with Control Room
+                Get Started
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
               <button
                 onClick={() => onNavigate('login')}
-                className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card px-6 py-3.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary cursor-pointer"
+                className="inline-flex items-center justify-center rounded-full border border-border/60 bg-card px-7 py-3.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary cursor-pointer"
               >
                 Sign In to Account
               </button>
@@ -176,7 +176,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 /* ---------------- MEET MUSA AI SECTION (IMAGE 5) ---------------- */
 function MeetMusaAiSection({ onNavigate }: { onNavigate: (v: ViewRoute) => void }) {
   return (
-    <section className="relative px-6">
+    <section id="meet-musa-ai" className="relative px-6">
       <div className="mx-auto max-w-7xl">
         <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-navy-800/80 via-navy-900 to-navy-800/60 p-8 lg:p-14 card-glow">
           
@@ -222,10 +222,10 @@ function MeetMusaAiSection({ onNavigate }: { onNavigate: (v: ViewRoute) => void 
 
               <div className="pt-2">
                 <button
-                  onClick={() => onNavigate('checkin')}
+                  onClick={() => onNavigate('login')}
                   className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 cursor-pointer"
                 >
-                  Test Musa AI Scanner Engine
+                  Explore Musa AI Gate Sentinel
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
@@ -262,7 +262,7 @@ function MeetMusaAiSection({ onNavigate }: { onNavigate: (v: ViewRoute) => void 
 /* ---------------- PLATFORM OVERVIEW SECTION (IMAGE 2) ---------------- */
 function PlatformOverviewSection() {
   return (
-    <section className="px-6">
+    <section id="platform-overview" className="px-6">
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="mx-auto max-w-2xl text-center space-y-3">
           <span className="text-xs font-mono uppercase tracking-wider text-[#5cbdb9] font-bold">
@@ -540,7 +540,7 @@ function AudienceAndPathsSection() {
   ];
 
   return (
-    <section className="px-6 space-y-16">
+    <section id="audience-paths" className="px-6 space-y-16">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
@@ -620,7 +620,7 @@ function CalculatorSection() {
   const totalEntryTimeMinutes = Math.round(guestsCount / totalThroughputPerMin);
 
   return (
-    <section className="px-6">
+    <section id="calculator-section" className="px-6">
       <div className="mx-auto max-w-7xl">
         <div className="rounded-3xl border border-border/60 bg-card/40 p-8 lg:p-12 card-glow space-y-8">
           <div className="max-w-2xl">
@@ -712,10 +712,10 @@ function CTASection({ onNavigate }: { onNavigate: (v: ViewRoute) => void }) {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <button
-                onClick={() => onNavigate('dashboard')}
+                onClick={() => onNavigate('login')}
                 className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:bg-primary/90 cursor-pointer"
               >
-                Launch Control Room
+                Get Started
                 <ArrowRight className="h-4 w-4" />
               </button>
               <button
