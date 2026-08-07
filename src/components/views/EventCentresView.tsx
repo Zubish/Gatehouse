@@ -3,6 +3,7 @@ import { useGatehouse } from '../../context/GatehouseContext';
 import type { EventCentre, ViewRoute } from '../../types';
 import { Footer } from '../layout/Footer';
 import { MapPin, Search, Filter, Users, Building2, ShieldCheck } from 'lucide-react';
+import { useFormDraft } from '../../hooks/useFormDraft';
 
 interface EventCentresViewProps {
   onNavigate?: (view: ViewRoute) => void;
@@ -22,10 +23,15 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
   const [selectedVenueModal, setSelectedVenueModal] = useState<EventCentre | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingVenue, setBookingVenue] = useState<EventCentre | null>(null);
-  const [eventName, setEventName] = useState('');
-  const [requestedDate, setRequestedDate] = useState('');
-  const [guestEstimate, setGuestEstimate] = useState(500);
-  const [bookingMessage, setBookingMessage] = useState('');
+
+  // 5-Minute Auto-Saved Booking Form Draft
+  const [bookingFormData, setBookingFormData, clearBookingDraft] = useFormDraft('venue_booking_draft', {
+    eventName: '',
+    requestedDate: '',
+    guestEstimate: 500,
+    bookingMessage: '',
+  });
+
   const [bookingSuccessMsg, setBookingSuccessMsg] = useState('');
 
   // Jiji.ng Location Data Mapping
@@ -85,14 +91,14 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
 
   const handleSendBookingRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bookingVenue || !eventName.trim() || !requestedDate.trim()) return;
+    if (!bookingVenue || !bookingFormData.eventName.trim() || !bookingFormData.requestedDate.trim()) return;
 
     await createBookingRequest(
       bookingVenue.id,
-      eventName,
-      requestedDate,
-      guestEstimate,
-      bookingMessage
+      bookingFormData.eventName,
+      bookingFormData.requestedDate,
+      bookingFormData.guestEstimate,
+      bookingFormData.bookingMessage
     );
 
     setBookingSuccessMsg(
@@ -101,9 +107,7 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
     setTimeout(() => {
       setBookingSuccessMsg('');
       setShowBookingModal(false);
-      setEventName('');
-      setRequestedDate('');
-      setBookingMessage('');
+      clearBookingDraft(); // Clears booking draft on successful submission
     }, 2000);
   };
 
@@ -409,8 +413,8 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
                     <input
                       type="text"
                       placeholder="e.g. Lagos Tech Summit 2026"
-                      value={eventName}
-                      onChange={(e) => setEventName(e.target.value)}
+                      value={bookingFormData.eventName}
+                      onChange={(e) => setBookingFormData((prev) => ({ ...prev, eventName: e.target.value }))}
                       required
                       className="w-full rounded-xl border border-border/80 bg-navy-800 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
@@ -421,8 +425,8 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
                     <input
                       type="text"
                       placeholder="e.g. Sat, 15 Nov 2026"
-                      value={requestedDate}
-                      onChange={(e) => setRequestedDate(e.target.value)}
+                      value={bookingFormData.requestedDate}
+                      onChange={(e) => setBookingFormData((prev) => ({ ...prev, requestedDate: e.target.value }))}
                       required
                       className="w-full rounded-xl border border-border/80 bg-navy-800 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
@@ -434,8 +438,8 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
                       type="number"
                       min={100}
                       max={bookingVenue.capacityMax}
-                      value={guestEstimate}
-                      onChange={(e) => setGuestEstimate(Number(e.target.value))}
+                      value={bookingFormData.guestEstimate}
+                      onChange={(e) => setBookingFormData((prev) => ({ ...prev, guestEstimate: Number(e.target.value) }))}
                       required
                       className="w-full rounded-xl border border-border/80 bg-navy-800 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
@@ -446,8 +450,8 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
                     <textarea
                       rows={3}
                       placeholder="Specify stage setup, VIP lounge access, sound setup..."
-                      value={bookingMessage}
-                      onChange={(e) => setBookingMessage(e.target.value)}
+                      value={bookingFormData.bookingMessage}
+                      onChange={(e) => setBookingFormData((prev) => ({ ...prev, bookingMessage: e.target.value }))}
                       className="w-full rounded-xl border border-border/80 bg-navy-800 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
                   </div>

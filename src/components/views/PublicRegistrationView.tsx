@@ -1,18 +1,23 @@
-import React, { useState } from "react";
-import { useGatehouse } from "../../context/GatehouseContext";
-import { generateQrGrid } from "../../utils/qrGenerator";
-import type { Guest } from "../../types";
+import React, { useState } from 'react';
+import { useGatehouse } from '../../context/GatehouseContext';
+import { generateQrGrid } from '../../utils/qrGenerator';
+import type { Guest } from '../../types';
+import { useFormDraft } from '../../hooks/useFormDraft';
 
 export const PublicRegistrationView: React.FC = () => {
   const { activeEvent, guests, addGuest } = useGatehouse();
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [category, setCategory] = useState<"VIP" | "Regular">("Regular");
+  // 5-Minute Form Draft Persistence Hook
+  const [formData, setFormData, clearDraft] = useFormDraft('public_registration', {
+    name: '',
+    phone: '',
+    email: '',
+    category: 'Regular' as 'VIP' | 'Regular',
+  });
+
   const [registeredGuest, setRegisteredGuest] = useState<Guest | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [copiedLinkMsg, setCopiedLinkMsg] = useState("");
+  const [copiedLinkMsg, setCopiedLinkMsg] = useState('');
 
   const currentCount = guests.length;
   const capacityReached = currentCount >= activeEvent.capacity;
@@ -22,140 +27,129 @@ export const PublicRegistrationView: React.FC = () => {
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(publicLink);
-    setCopiedLinkMsg("Copied to clipboard!");
-    setTimeout(() => setCopiedLinkMsg(""), 2000);
+    setCopiedLinkMsg('Copied to clipboard!');
+    setTimeout(() => setCopiedLinkMsg(''), 2000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || isSubmitting) return;
+    if (!formData.name.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     const newGuest = await addGuest(
-      name,
-      phone,
-      category,
-      "self_registered",
-      email,
+      formData.name,
+      formData.phone,
+      formData.category,
+      'self_registered',
+      formData.email
     );
     setIsSubmitting(false);
 
     if (newGuest) {
       setRegisteredGuest(newGuest);
+      clearDraft(); // Clears form draft upon successful pass creation
     }
   };
 
-  const qrGrid = registeredGuest
-    ? generateQrGrid(registeredGuest.qrPayload)
-    : [];
+  const qrGrid = registeredGuest ? generateQrGrid(registeredGuest.qrPayload) : [];
 
   return (
     <section className="view active" id="view-public-reg">
       <div className="max-w-xl mx-auto space-y-6">
         {/* EVENT PUBLIC HEADER BANNER */}
-        <div className="panel text-center space-y-3 border-[#3ED98A]/40 bg-gradient-to-b from-[#0f172a] to-[#173226]/30 p-8 rounded-2xl shadow-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#173226] text-[#3ED98A] font-mono text-xs font-bold border border-[#3ED98A]/30">
-            <span className="w-2 h-2 rounded-full bg-[#3ED98A] animate-pulse" />
+        <div className="rounded-3xl border border-[#5cbdb9]/40 bg-gradient-to-b from-navy-900 to-navy-800 p-8 text-center space-y-4 shadow-xl card-glow">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-900 text-[#5cbdb9] font-mono text-xs font-bold border border-[#5cbdb9]/30">
+            <span className="w-2 h-2 rounded-full bg-[#5cbdb9] animate-pulse" />
             PUBLIC SELF-REGISTRATION LINK (PATH C)
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-extrabold font-['Space_Grotesk'] text-[#EDEFF3]">
+          <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-foreground">
             {activeEvent.name}
           </h2>
 
-          <p className="text-xs text-[#94a3b8] font-mono">
-            🗓️ {activeEvent.date} at {activeEvent.startTime} • Public Token:{" "}
-            <code className="text-[#3ED98A] font-bold">
-              [{activeEvent.registrationLinkToken}]
-            </code>
+          <p className="text-xs text-muted-foreground font-mono">
+            🗓️ {activeEvent.date} at {activeEvent.startTime} • Token:{' '}
+            <code className="text-[#5cbdb9] font-bold">[{activeEvent.registrationLinkToken}]</code>
           </p>
 
           {/* SHAREABLE PUBLIC LINK BAR */}
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-[#080c14] border border-[#262D38] text-xs font-mono text-[#8B93A3] max-w-md mx-auto">
+          <div className="flex items-center gap-2 p-2 rounded-2xl bg-navy-900 border border-border/60 text-xs font-mono text-muted-foreground max-w-md mx-auto">
             <span className="truncate flex-1 pl-2 text-left">{publicLink}</span>
             <button
               onClick={handleCopyLink}
-              className="btn btn-go btn-sm font-mono font-bold shrink-0"
+              className="rounded-full bg-primary px-4 py-2 text-xs font-mono font-bold text-primary-foreground hover:bg-primary/90 cursor-pointer shrink-0"
             >
-              {copiedLinkMsg || "Copy Link"}
+              {copiedLinkMsg || 'Copy Link'}
             </button>
           </div>
 
           {/* CAPACITY METRICS */}
           <div className="flex justify-center items-center gap-4 text-xs font-mono pt-2">
-            <span className="text-[#8B93A3]">
-              Registered: <strong className="text-white">{currentCount}</strong>{" "}
-              / {activeEvent.capacity}
+            <span className="text-muted-foreground">
+              Registered: <strong className="text-foreground">{currentCount}</strong> / {activeEvent.capacity}
             </span>
-            <span className="text-[#262D38]">|</span>
-            <span
-              className={
-                spotsLeft > 0
-                  ? "text-[#3ED98A] font-bold"
-                  : "text-[#E5555C] font-bold"
-              }
-            >
-              {spotsLeft > 0
-                ? `🔥 ${spotsLeft} Spots Remaining`
-                : "⛔ Event Sold Out"}
+            <span className="text-border">|</span>
+            <span className={spotsLeft > 0 ? 'text-[#38ef7d] font-bold' : 'text-destructive font-bold'}>
+              {spotsLeft > 0 ? `🔥 ${spotsLeft} Spots Remaining` : '⛔ Event Sold Out'}
             </span>
           </div>
         </div>
 
         {/* REGISTRATION FORM OR QR PASS CONFIRMATION */}
         {!registeredGuest ? (
-          <div className="panel space-y-4">
+          <div className="rounded-3xl border border-border/60 bg-card/60 p-6 lg:p-8 card-glow space-y-4">
             {capacityReached ? (
-              <div className="p-6 rounded-xl bg-[#331B1D] border border-[#E5555C] text-[#E5555C] text-xs font-mono text-center font-bold space-y-2">
+              <div className="p-6 rounded-2xl bg-destructive/10 border border-destructive text-destructive text-xs font-mono text-center font-bold space-y-2">
                 <div className="text-xl">⛔ REGISTRATION CLOSED</div>
                 <div>
-                  Capacity cap reached ({activeEvent.capacity} guests max). No
-                  further self-registrations allowed.
+                  Capacity cap reached ({activeEvent.capacity} guests max). No further self-registrations allowed.
                 </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="field">
-                  <label>Full Name *</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-mono text-muted-foreground font-bold">Full Name *</label>
                   <input
                     type="text"
                     placeholder="e.g. Babatunde Raji"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={formData.name}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     required
+                    className="w-full rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                   />
                 </div>
 
-                <div className="field-row">
-                  <div className="field">
-                    <label>Phone / WhatsApp Number *</label>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-muted-foreground font-bold">Phone Number *</label>
                     <input
                       type="tel"
                       placeholder="08031234567"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      value={formData.phone}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
                       required
+                      className="w-full rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
                   </div>
 
-                  <div className="field">
-                    <label>Email Address (For Pass Copy)</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-muted-foreground font-bold">Email Address</label>
                     <input
                       type="email"
                       placeholder="name@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={formData.email}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                      className="w-full rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                     />
                   </div>
                 </div>
 
-                <div className="field">
-                  <label>Select Ticket Tier</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-mono text-muted-foreground font-bold">Select Ticket Tier</label>
                   <select
-                    value={category}
-                    onChange={(e) =>
-                      setCategory(e.target.value as "VIP" | "Regular")
-                    }
+                    value={formData.category}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value as 'VIP' | 'Regular' }))}
+                    className="w-full rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
                   >
                     <option value="Regular">Regular Pass (Free Access)</option>
                     <option value="VIP">VIP Access Pass</option>
@@ -165,26 +159,24 @@ export const PublicRegistrationView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn btn-go w-full py-4 text-xs font-mono font-bold shadow-xl shadow-[#3ED98A]/20 hover:scale-[1.01] transition-transform"
+                  className="w-full rounded-full bg-primary py-3.5 text-xs font-mono font-bold text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-lg transition-all pt-2"
                 >
-                  {isSubmitting
-                    ? "Registering…"
-                    : "🎟️ Register & Claim Digital QR Gate Pass"}
+                  {isSubmitting ? 'Registering…' : '🎟️ Register & Claim Digital QR Gate Pass'}
                 </button>
               </form>
             )}
           </div>
         ) : (
           /* INSTANT QR PASS BADGE RENDER */
-          <div className="panel text-center space-y-6 border-[#3ED98A]/60 bg-[#0f172a] p-8 rounded-2xl shadow-2xl">
-            <div className="p-3 rounded-xl bg-[#173226] text-[#3ED98A] text-xs font-mono font-bold border border-[#3ED98A]/40">
+          <div className="rounded-3xl border border-[#38ef7d]/60 bg-navy-900 p-8 text-center space-y-6 shadow-2xl">
+            <div className="p-3.5 rounded-2xl bg-[#38ef7d]/10 border border-[#38ef7d] text-[#38ef7d] text-xs font-mono font-bold">
               🎉 REGISTRATION SUCCESSFUL! YOUR GATEPASS QR CODE IS ACTIVE.
             </div>
 
             {/* BADGE CONTAINER */}
-            <div className="badge max-w-sm mx-auto flex-col p-6 space-y-4 bg-[#1B2129] border border-[#262D38] rounded-2xl shadow-xl">
+            <div className="max-w-sm mx-auto p-6 space-y-4 bg-navy-800 border border-border/60 rounded-3xl shadow-xl">
               {/* SVG 21x21 QR Code Rendering */}
-              <div className="w-48 h-48 bg-white rounded-xl p-3 mx-auto shadow-2xl flex items-center justify-center">
+              <div className="w-48 h-48 bg-white rounded-2xl p-3 mx-auto shadow-2xl flex items-center justify-center">
                 <svg viewBox="0 0 21 21" className="w-full h-full">
                   {qrGrid.map((row, r) =>
                     row.map((cell, c) =>
@@ -197,47 +189,37 @@ export const PublicRegistrationView: React.FC = () => {
                           height="1"
                           fill="#0D1015"
                         />
-                      ) : null,
-                    ),
+                      ) : null
+                    )
                   )}
                 </svg>
               </div>
 
-              <div className="badge-info text-center space-y-1.5">
-                <div className="name text-xl font-bold font-['Space_Grotesk'] text-[#EDEFF3]">
+              <div className="space-y-1.5 text-center">
+                <div className="text-xl font-bold font-heading text-foreground">
                   {registeredGuest.name}
                 </div>
-                <div className="text-xs font-mono text-[#8B93A3]">
+                <div className="text-xs font-mono text-muted-foreground">
                   {activeEvent.name}
                 </div>
-                <div className="code-chip inline-block mt-2 font-mono text-sm font-bold tracking-widest text-[#3ED98A]">
+                <div className="inline-block mt-2 font-mono text-sm font-bold tracking-widest text-[#38ef7d] bg-navy-900 px-3 py-1 rounded-full border border-[#38ef7d]/40">
                   {registeredGuest.code}
                 </div>
                 <div>
-                  <span
-                    className={`tag inline-block ${
-                      registeredGuest.category === "VIP"
-                        ? "tag-vip"
-                        : "tag-regular"
-                    }`}
-                  >
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-mono font-bold uppercase bg-primary/20 text-primary border border-primary/30 mt-2">
                     {registeredGuest.category} PASS
                   </span>
                 </div>
               </div>
             </div>
 
-            <p className="text-xs text-[#8B93A3] font-mono max-w-md mx-auto">
-              Show this QR pass or code chip{" "}
-              <code className="text-[#3ED98A] font-bold">
-                {registeredGuest.code}
-              </code>{" "}
-              at the gate entrance for express 2.5-second scan verification.
+            <p className="text-xs text-muted-foreground font-mono max-w-md mx-auto">
+              Show this QR pass or code chip <code className="text-[#38ef7d] font-bold">{registeredGuest.code}</code> at the gate entrance for express 2.5-second scan verification.
             </p>
 
             <button
               onClick={() => setRegisteredGuest(null)}
-              className="btn btn-ghost text-xs font-mono"
+              className="rounded-full border border-border/60 bg-card px-6 py-2.5 text-xs font-mono text-foreground hover:bg-secondary cursor-pointer"
             >
               Register Another Guest
             </button>
