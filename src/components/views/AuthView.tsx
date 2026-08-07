@@ -55,7 +55,27 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
           text: 'Authentication successful! Redirecting to Control Room…',
         });
         setTimeout(() => {
-          setActiveTab(role === 'centre' ? 'centre-dash' : 'dashboard');
+          let userRole: string = 'organizer';
+          const rawAccounts = localStorage.getItem('gatehouse_registered_users');
+          if (rawAccounts) {
+            try {
+              const accounts = JSON.parse(rawAccounts);
+              const match = accounts.find((a: any) => a.email?.toLowerCase() === email.toLowerCase());
+              if (match && match.role) {
+                userRole = match.role;
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }
+          if (
+            email.toLowerCase() === 'venue@gatehouse.app' ||
+            email.toLowerCase() === 'security@ekohotels.com' ||
+            email.toLowerCase().includes('venue')
+          ) {
+            userRole = 'centre';
+          }
+          setActiveTab(userRole === 'centre' ? 'centre-dash' : 'dashboard');
         }, 600);
       } else {
         setStatusMsg({
@@ -267,43 +287,45 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
             {/* AUTH FORM */}
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* ROLE SELECTION CARDS */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono text-muted-foreground uppercase font-bold">Select account type</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole('organizer')}
-                    className={`p-3.5 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
-                      role === 'organizer'
-                        ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
-                        : 'border-border/80 bg-navy-900 hover:border-border'
-                    }`}
-                  >
-                    <User className={`h-5 w-5 ${role === 'organizer' ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <div>
-                      <div className="text-xs font-bold text-foreground">Event Host</div>
-                      <div className="text-[10px] text-muted-foreground font-mono">Organize &amp; scan guests</div>
-                    </div>
-                  </button>
+              {/* ROLE SELECTION CARDS (REGISTRATION ONLY) */}
+              {authMode === 'register' && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono text-muted-foreground uppercase font-bold">Select account type</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRole('organizer')}
+                      className={`p-3.5 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                        role === 'organizer'
+                          ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
+                          : 'border-border/80 bg-navy-900 hover:border-border'
+                      }`}
+                    >
+                      <User className={`h-5 w-5 ${role === 'organizer' ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div>
+                        <div className="text-xs font-bold text-foreground">Event Host</div>
+                        <div className="text-[10px] text-muted-foreground font-mono">Organize &amp; scan guests</div>
+                      </div>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setRole('centre')}
-                    className={`p-3.5 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
-                      role === 'centre'
-                        ? 'border-[#5cbdb9] bg-[#5cbdb9]/10 ring-1 ring-[#5cbdb9]/40'
-                        : 'border-border/80 bg-navy-900 hover:border-border'
-                    }`}
-                  >
-                    <Building className={`h-5 w-5 ${role === 'centre' ? 'text-[#5cbdb9]' : 'text-muted-foreground'}`} />
-                    <div>
-                      <div className="text-xs font-bold text-foreground">Venue Owner</div>
-                      <div className="text-[10px] text-muted-foreground font-mono font-normal">Manage hall &amp; bookings</div>
-                    </div>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('centre')}
+                      className={`p-3.5 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                        role === 'centre'
+                          ? 'border-[#5cbdb9] bg-[#5cbdb9]/10 ring-1 ring-[#5cbdb9]/40'
+                          : 'border-border/80 bg-navy-900 hover:border-border'
+                      }`}
+                    >
+                      <Building className={`h-5 w-5 ${role === 'centre' ? 'text-[#5cbdb9]' : 'text-muted-foreground'}`} />
+                      <div>
+                        <div className="text-xs font-bold text-foreground">Venue Owner</div>
+                        <div className="text-[10px] text-muted-foreground font-mono font-normal">Manage hall &amp; bookings</div>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* FULL NAME (REGISTRATION ONLY) */}
               {authMode === 'register' && (
