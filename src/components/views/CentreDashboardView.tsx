@@ -56,15 +56,15 @@ export const CentreDashboardView: React.FC = () => {
 
   const handleRegisterDelegatedGuest = async () => {
     if (!delegatedGuestName.trim()) return;
-    const newGuest = await addGuest(
-      delegatedGuestName,
-      delegatedGuestPhone,
-      delegatedCategory,
-      "centre_import",
-    );
+    const newGuest = addGuest({
+      name: delegatedGuestName,
+      phone: delegatedGuestPhone || '+234 800 000 0000',
+      category: delegatedCategory,
+      organization: 'Delegated Venue Guest',
+    });
     if (newGuest) {
       setDelegatedSuccessMsg(
-        `Delegated VIP Guest registered: ${newGuest.name} (Pass: ${newGuest.code})`,
+        `Delegated VIP Guest registered: ${newGuest.name} (Pass: ${newGuest.code})`
       );
       setDelegatedGuestName("");
       setDelegatedGuestPhone("");
@@ -74,10 +74,10 @@ export const CentreDashboardView: React.FC = () => {
 
   const handleDelegatedBulkImport = async () => {
     if (!delegatedBulkText.trim()) return;
-    const added = await bulkImportGuests(delegatedBulkText, "centre_import");
+    const added = bulkImportGuests(delegatedBulkText);
     setDelegatedBulkText("");
     setBulkImportStatus(
-      `Delegated venue import added ${added} guest${added !== 1 ? "s" : ""}.`,
+      `Delegated venue import added ${added} guest${added !== 1 ? "s" : ""}.`
     );
     setTimeout(() => setBulkImportStatus(""), 3000);
   };

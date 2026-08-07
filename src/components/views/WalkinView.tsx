@@ -28,7 +28,12 @@ export const WalkinView: React.FC = () => {
       return;
     }
 
-    const g = await addGuest(formData.name, formData.phone, formData.category);
+    const g = addGuest({
+      name: formData.name,
+      phone: formData.phone || '+234 800 000 0000',
+      category: formData.category,
+      organization: 'Walk-In Guest',
+    });
     if (g) {
       await checkInGuest(g.id);
       setStatusBanner({

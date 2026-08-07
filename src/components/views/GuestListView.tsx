@@ -26,7 +26,12 @@ export const GuestListView: React.FC = () => {
 
   const handleAddGuest = async () => {
     if (!addName.trim()) return;
-    await addGuest(addName, addPhone, addCategory);
+    addGuest({
+      name: addName,
+      phone: addPhone || '+234 800 000 0000',
+      category: addCategory,
+      organization: 'Guest List Entry',
+    });
     setAddName("");
     setAddPhone("");
   };

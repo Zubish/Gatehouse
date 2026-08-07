@@ -60,8 +60,8 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
         c.name.toLowerCase().includes(q) ||
         c.address.toLowerCase().includes(q) ||
         c.city.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q) ||
-        c.amenities.some((a) => a.toLowerCase().includes(q));
+        (c.description || '').toLowerCase().includes(q) ||
+        c.amenities.some((a: string) => a.toLowerCase().includes(q));
 
       const matchesState =
         selectedState === 'all' || c.city.toLowerCase() === selectedState.toLowerCase();
@@ -75,9 +75,9 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
         selectedCategory === 'all' ||
         selectedCategory === 'All Categories' ||
         c.name.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-        c.description.toLowerCase().includes(selectedCategory.toLowerCase());
+        (c.description || '').toLowerCase().includes(selectedCategory.toLowerCase());
 
-      const matchesCapacity = c.capacityMax <= maxCapacityFilter;
+      const matchesCapacity = (c.capacityMax || c.capacity || 5000) <= maxCapacityFilter;
 
       return matchesSearch && matchesState && matchesNeighborhood && matchesCategory && matchesCapacity;
     });
@@ -265,7 +265,8 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
                 <div className="relative h-48 bg-navy-900 overflow-hidden">
                   <img
                     src={
-                      centre.photos[0] ||
+                      (centre.photos && centre.photos[0]) ||
+                      centre.image ||
                       'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'
                     }
                     alt={centre.name}
@@ -285,13 +286,13 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
                     {centre.name}
                   </h3>
                   <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                    {centre.description}
+                    {centre.description || ''}
                   </p>
 
                   <div className="flex items-center justify-between text-xs font-mono pt-3 border-t border-border/40">
                     <span className="text-muted-foreground">Capacity:</span>
                     <strong className="text-foreground">
-                      {centre.capacityMin} - {centre.capacityMax.toLocaleString()} guests
+                      {centre.capacityMin || 500} - {(centre.capacityMax || centre.capacity || 5000).toLocaleString()} guests
                     </strong>
                   </div>
 
@@ -350,7 +351,7 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
 
               <div className="h-60 rounded-2xl overflow-hidden bg-navy-800">
                 <img
-                  src={selectedVenueModal.photos[0]}
+                  src={(selectedVenueModal.photos && selectedVenueModal.photos[0]) || selectedVenueModal.image || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'}
                   alt={selectedVenueModal.name}
                   className="w-full h-full object-cover"
                 />
@@ -358,9 +359,9 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
 
               <div className="space-y-2 text-xs text-muted-foreground">
                 <p><strong className="text-foreground">Address:</strong> {selectedVenueModal.address}, {selectedVenueModal.city}</p>
-                <p>{selectedVenueModal.description}</p>
-                <p><strong className="text-foreground">Capacity Limit:</strong> {selectedVenueModal.capacityMin} to {selectedVenueModal.capacityMax.toLocaleString()} guests</p>
-                <p><strong className="text-foreground">Pricing:</strong> <span className="text-[#5cbdb9] font-bold">{selectedVenueModal.priceRange}</span></p>
+                <p>{selectedVenueModal.description || ''}</p>
+                <p><strong className="text-foreground">Capacity Limit:</strong> {selectedVenueModal.capacityMin || 500} to {(selectedVenueModal.capacityMax || selectedVenueModal.capacity || 5000).toLocaleString()} guests</p>
+                <p><strong className="text-foreground">Pricing:</strong> <span className="text-[#5cbdb9] font-bold">{selectedVenueModal.priceRange || 'Contact Venue'}</span></p>
               </div>
 
               <div className="pt-4 flex gap-3">
@@ -391,7 +392,7 @@ export const EventCentresView: React.FC<EventCentresViewProps> = ({ onNavigate }
                     Request Booking: {bookingVenue.name}
                   </h3>
                   <div className="text-xs font-mono text-[#5cbdb9]">
-                    {bookingVenue.city} • Capacity: {bookingVenue.capacityMax.toLocaleString()}
+                    {bookingVenue.city} • Capacity: {(bookingVenue.capacityMax || bookingVenue.capacity || 5000).toLocaleString()}
                   </div>
                 </div>
                 <button
