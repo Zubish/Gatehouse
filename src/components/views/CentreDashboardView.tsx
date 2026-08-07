@@ -1,57 +1,43 @@
-import React, { useState } from "react";
-import { useGatehouse } from "../../context/GatehouseContext";
+import React, { useState } from 'react';
+import { useGatehouse } from '../../context/GatehouseContext';
+import { Building, Calendar, Clock, Plus, UserPlus, Check, X, FileSpreadsheet } from 'lucide-react';
 
 export const CentreDashboardView: React.FC = () => {
-  const {
-    bookings,
-    updateBookingStatus,
-    delegations,
-    addGuest,
-    bulkImportGuests,
-  } = useGatehouse();
+  const { selectedCentre, bookings, updateBookingStatus, addGuest, bulkImportGuests } = useGatehouse();
 
-  // Centre Delegated Guest Registration State
-  const [delegatedGuestName, setDelegatedGuestName] = useState("");
-  const [delegatedGuestPhone, setDelegatedGuestPhone] = useState("");
-  const [delegatedCategory, setDelegatedCategory] = useState<"VIP" | "Regular">(
-    "VIP",
+  // Delegated Usher State
+  const [delegatedGuestName, setDelegatedGuestName] = useState('');
+  const [delegatedGuestPhone, setDelegatedGuestPhone] = useState('');
+  const [delegatedCategory, setDelegatedCategory] = useState<'VIP' | 'Regular'>('VIP');
+  const [delegatedSuccessMsg, setDelegatedSuccessMsg] = useState('');
+  const [delegatedBulkText, setDelegatedBulkText] = useState('');
+  const [bulkImportStatus, setBulkImportStatus] = useState('');
+
+  // Venue Hall Management State
+  const [halls, setHalls] = useState(
+    selectedCentre?.halls || [
+      { id: 'h_1', name: 'Grand Ballroom', capacity: 3000, pricePerDay: '₦5,500,000' },
+      { id: 'h_2', name: 'Ocean View Marquee', capacity: 2000, pricePerDay: '₦3,800,000' },
+    ]
   );
-  const [delegatedSuccessMsg, setDelegatedSuccessMsg] = useState("");
+  const [newHallName, setNewHallName] = useState('');
+  const [newHallCap, setNewHallCap] = useState('');
+  const [newHallPrice, setNewHallPrice] = useState('');
+  const [showAddHallModal, setShowAddHallModal] = useState(false);
 
-  // Centre Delegated Bulk State
-  const [delegatedBulkText, setDelegatedBulkText] = useState("");
-  const [bulkImportStatus, setBulkImportStatus] = useState("");
-
-  // Multi-Hall Venue Spaces State
-  const [selectedHall, setSelectedHall] = useState("Grand Ballroom");
-  const [usherName, setUsherName] = useState("");
-  const [assignedUshers, setAssignedUshers] = useState<
-    { id: string; name: string; hall: string; lane: string }[]
-  >([
-    {
-      id: "ush_1",
-      name: "Emeka Nnamdi",
-      hall: "Grand Ballroom",
-      lane: "VIP Gate Lane 01",
-    },
-    {
-      id: "ush_2",
-      name: "Fatima Bello",
-      hall: "Hall A",
-      lane: "Main Gate Lane 03",
-    },
-  ]);
-  const [usherAssignMsg, setUsherAssignMsg] = useState("");
-
-  const pendingBookings = bookings.filter((b) => b.status === "requested");
-  const acceptedBookings = bookings.filter((b) => b.status === "accepted");
-
-  const handleAcceptBooking = async (id: string) => {
-    await updateBookingStatus(id, "accepted");
-  };
-
-  const handleDeclineBooking = async (id: string) => {
-    await updateBookingStatus(id, "declined");
+  const handleAddHall = () => {
+    if (!newHallName.trim() || !newHallCap) return;
+    const newH = {
+      id: `h_${Date.now()}`,
+      name: newHallName,
+      capacity: Number(newHallCap),
+      pricePerDay: newHallPrice ? `₦${Number(newHallPrice).toLocaleString()}` : '₦3,000,000',
+    };
+    setHalls((prev) => [...prev, newH]);
+    setNewHallName('');
+    setNewHallCap('');
+    setNewHallPrice('');
+    setShowAddHallModal(false);
   };
 
   const handleRegisterDelegatedGuest = async () => {
@@ -66,351 +52,268 @@ export const CentreDashboardView: React.FC = () => {
       setDelegatedSuccessMsg(
         `Delegated VIP Guest registered: ${newGuest.name} (Pass: ${newGuest.code})`
       );
-      setDelegatedGuestName("");
-      setDelegatedGuestPhone("");
-      setTimeout(() => setDelegatedSuccessMsg(""), 3000);
+      setDelegatedGuestName('');
+      setDelegatedGuestPhone('');
+      setTimeout(() => setDelegatedSuccessMsg(''), 3000);
     }
   };
 
   const handleDelegatedBulkImport = async () => {
     if (!delegatedBulkText.trim()) return;
     const added = bulkImportGuests(delegatedBulkText);
-    setDelegatedBulkText("");
+    setDelegatedBulkText('');
     setBulkImportStatus(
-      `Delegated venue import added ${added} guest${added !== 1 ? "s" : ""}.`
+      `Delegated venue import added ${added} guest${added !== 1 ? 's' : ''}.`
     );
-    setTimeout(() => setBulkImportStatus(""), 3000);
-  };
-
-  const handleAssignUsher = () => {
-    if (!usherName.trim()) return;
-    const newUsh = {
-      id: "ush_" + Math.random().toString(36).substring(2, 7),
-      name: usherName.trim(),
-      hall: selectedHall,
-      lane: `Lane #${assignedUshers.length + 1}`,
-    };
-    setAssignedUshers((prev) => [...prev, newUsh]);
-    setUsherAssignMsg(`Usher ${newUsh.name} assigned to ${newUsh.hall}!`);
-    setUsherName("");
-    setTimeout(() => setUsherAssignMsg(""), 2500);
+    setTimeout(() => setBulkImportStatus(''), 3000);
   };
 
   return (
-    <section className="view active" id="view-centre-dashboard">
-      <div className="space-y-6">
-        {/* PORTAL TITLE & METRICS */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#262D38] pb-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#332A14] text-[#F0A93B] font-mono text-xs font-bold border border-[#F0A93B]/30 mb-2">
-              <span className="w-2 h-2 rounded-full bg-[#F0A93B] animate-pulse" />
-              MULTI-HALL VENUE &amp; USHERING OPERATIONS (PHASE 7)
-            </div>
-            <h2 className="text-2xl font-bold font-['Space_Grotesk'] text-[#EDEFF3]">
-              Venue Manager Operations &amp; Delegations
-            </h2>
-            <p className="text-xs font-mono text-[#8B93A3]">
-              Review organizer venue bookings, assign hall ushers, and manage
-              delegated gate access.
-            </p>
+    <section className="view active space-y-8" id="view-centre-dash">
+      
+      {/* HEADER BAR */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-6">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#5cbdb9]/10 text-[#5cbdb9] font-mono text-xs font-bold border border-[#5cbdb9]/30">
+            <Building className="h-3.5 w-3.5" />
+            VENUE OWNER PORTAL &amp; HALL CONTROL
           </div>
-
-          <div className="flex gap-4">
-            <div className="p-3 rounded-xl bg-[#151A22] border border-[#262D38] text-center font-mono">
-              <div className="text-xs text-[#8B93A3] uppercase">
-                Pending Requests
-              </div>
-              <div className="text-xl font-bold text-[#F0A93B] font-['Space_Grotesk']">
-                {pendingBookings.length}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl bg-[#151A22] border border-[#262D38] text-center font-mono">
-              <div className="text-xs text-[#8B93A3] uppercase">
-                Active Delegations
-              </div>
-              <div className="text-xl font-bold text-[#3ED98A] font-['Space_Grotesk']">
-                {delegations.length}
-              </div>
-            </div>
-          </div>
+          <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground">
+            {selectedCentre ? selectedCentre.name : 'Eko Hotels & Suites Convention Centre'}
+          </h2>
+          <p className="text-xs font-mono text-muted-foreground">
+            📍 {selectedCentre?.address || 'Victoria Island, Lagos'} • Managing Hall Bookings &amp; Gate Delegations
+          </p>
         </div>
 
-        {/* PENDING VENUE BOOKING REQUESTS */}
-        <div className="panel space-y-4">
-          <div className="panel-head">
-            <h3>Incoming Venue Booking Requests</h3>
-            <span className="text-xs font-mono text-[#8B93A3]">
-              {pendingBookings.length} request
-              {pendingBookings.length !== 1 ? "s" : ""} awaiting action
-            </span>
-          </div>
+        <button
+          onClick={() => setShowAddHallModal(true)}
+          className="rounded-full bg-primary px-5 py-2.5 text-xs font-mono font-bold text-primary-foreground hover:bg-primary/90 flex items-center gap-2 cursor-pointer shadow-md transition-all"
+        >
+          <Plus className="h-4 w-4" /> Add Hall Facility
+        </button>
+      </div>
 
-          {pendingBookings.length > 0 ? (
+      {/* HALL LISTINGS & BOOKINGS GRID */}
+      <div className="grid lg:grid-cols-12 gap-6">
+        
+        {/* LEFT COLUMN — MANAGED HALL FACILITIES */}
+        <div className="lg:col-span-6 space-y-6">
+          <div className="rounded-3xl border border-border/60 bg-card/60 p-6 space-y-4 card-glow">
+            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <h3 className="font-heading text-lg font-bold text-foreground">Managed Hall Facilities</h3>
+              <span className="text-xs font-mono text-[#38ef7d] font-bold">{halls.length} Active Halls</span>
+            </div>
+
             <div className="space-y-3">
-              {pendingBookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="p-4 rounded-xl bg-[#1B2129] border border-[#262D38] flex flex-wrap items-center justify-between gap-4 hover:border-[#F0A93B]/40 transition-all"
-                >
-                  <div className="space-y-1">
-                    <div className="font-bold text-sm text-[#EDEFF3] font-['Space_Grotesk']">
-                      {b.eventName}
-                    </div>
-                    <div className="text-xs font-mono text-[#94a3b8]">
-                      Host:{" "}
-                      <strong className="text-white">{b.organizerName}</strong>{" "}
-                      • Date:{" "}
-                      <strong className="text-[#3ED98A]">
-                        {b.requestedDate}
-                      </strong>
-                    </div>
-                    <div className="text-xs font-mono text-[#8B93A3]">
-                      Est. Guests: {b.guestEstimate} • Notes: "
-                      {b.message || "No special requests"}"
-                    </div>
+              {halls.map((h) => (
+                <div key={h.id} className="p-4 rounded-2xl bg-navy-900 border border-border/60 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-bold font-heading text-foreground">{h.name}</div>
+                    <div className="text-xs font-mono text-muted-foreground">Capacity: {h.capacity.toLocaleString()} guests</div>
                   </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleDeclineBooking(b.id)}
-                      className="btn btn-danger btn-sm font-mono"
-                    >
-                      Decline
-                    </button>
-                    <button
-                      onClick={() => handleAcceptBooking(b.id)}
-                      className="btn btn-go btn-sm font-mono font-bold"
-                    >
-                      Accept Booking &amp; Grant Access &rarr;
-                    </button>
+                  <div className="text-right">
+                    <div className="text-xs font-mono text-[#5cbdb9] font-bold">{h.pricePerDay} / day</div>
+                    <span className="text-[10px] font-mono text-[#38ef7d] bg-[#38ef7d]/10 px-2 py-0.5 rounded-full border border-[#38ef7d]/30 font-bold">
+                      Available
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="empty">No pending booking requests right now.</div>
-          )}
-        </div>
-
-        {/* MULTI-HALL VENUE SPACE USHER ASSIGNMENT MATRIX */}
-        <div className="panel space-y-4">
-          <div className="panel-head">
-            <h3>Multi-Hall Venue Spaces &amp; Gate Usher Matrix</h3>
-            <span className="text-xs font-mono text-[#3ED98A]">
-              Hardware Gate Lanes
-            </span>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Assign Usher Form */}
-            <div className="space-y-3">
-              <div className="field">
-                <label>Select Venue Hall / Space</label>
-                <select
-                  value={selectedHall}
-                  onChange={(e) => setSelectedHall(e.target.value)}
-                >
-                  <option value="Grand Ballroom">
-                    Grand Ballroom (Capacity: 3,000)
-                  </option>
-                  <option value="Hall A">Hall A (Capacity: 1,200)</option>
-                  <option value="Executive VIP Suite">
-                    Executive VIP Suite (Capacity: 300)
-                  </option>
-                </select>
+          {/* DELEGATED USHERING GUEST PASS GENERATION */}
+          <div className="rounded-3xl border border-border/60 bg-card/60 p-6 space-y-4 card-glow">
+            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <div className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4 text-[#5cbdb9]" />
+                <h3 className="font-heading text-base font-bold text-foreground">Delegated VIP Pass Generation</h3>
               </div>
+              <span className="text-[10px] font-mono text-muted-foreground">Path B Venue Permission</span>
+            </div>
 
-              <div className="field">
-                <label>Usher / Scanner Officer Full Name</label>
+            <div className="space-y-3 text-xs font-mono">
+              <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
-                  placeholder="e.g. Samuel Okon"
-                  value={usherName}
-                  onChange={(e) => setUsherName(e.target.value)}
+                  placeholder="Delegated Guest Name"
+                  value={delegatedGuestName}
+                  onChange={(e) => setDelegatedGuestName(e.target.value)}
+                  className="rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone Number"
+                  value={delegatedGuestPhone}
+                  onChange={(e) => setDelegatedGuestPhone(e.target.value)}
+                  className="rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
-              {usherAssignMsg && (
-                <div className="p-3 rounded-lg bg-[#173226] border border-[#3ED98A] text-[#3ED98A] text-xs font-mono text-center font-bold">
-                  {usherAssignMsg}
+              <div className="flex justify-between items-center gap-3 pt-1">
+                <select
+                  value={delegatedCategory}
+                  onChange={(e) => setDelegatedCategory(e.target.value as 'VIP' | 'Regular')}
+                  className="rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                >
+                  <option value="VIP">VIP Venue Guest</option>
+                  <option value="Regular">Regular Attendee</option>
+                </select>
+
+                <button
+                  onClick={handleRegisterDelegatedGuest}
+                  className="rounded-xl bg-primary px-4 py-2 text-xs font-mono font-bold text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer shadow-sm"
+                >
+                  + Issue Delegated Pass
+                </button>
+              </div>
+
+              {delegatedSuccessMsg && (
+                <div className="p-3 rounded-xl bg-[#38ef7d]/10 border border-[#38ef7d] text-[#38ef7d] text-xs font-mono font-bold text-center">
+                  {delegatedSuccessMsg}
                 </div>
               )}
 
-              <button
-                onClick={handleAssignUsher}
-                className="btn btn-go w-full font-mono font-bold text-xs py-3"
-              >
-                + Assign Usher &amp; Provision Scanner Gun
-              </button>
-            </div>
-
-            {/* Assigned Ushers List */}
-            <div className="space-y-2">
-              <label>Assigned Hall Ushers &amp; Gate Lanes</label>
-              <div className="space-y-2">
-                {assignedUshers.map((u) => (
-                  <div
-                    key={u.id}
-                    className="p-3 rounded-xl bg-[#080c14] border border-[#262D38] flex items-center justify-between text-xs font-mono"
+              <div className="pt-3 border-t border-border/40 space-y-2">
+                <label className="text-muted-foreground font-bold flex items-center gap-2">
+                  <FileSpreadsheet className="h-3.5 w-3.5 text-[#5cbdb9]" /> Delegated Bulk CSV Roster
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder={`Musa Ibrahim, 08031112222, VIP\nAmina Bello, 08023334444, Regular`}
+                  value={delegatedBulkText}
+                  onChange={(e) => setDelegatedBulkText(e.target.value)}
+                  className="w-full rounded-xl border border-border/80 bg-navy-900 px-3 py-2 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                />
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={handleDelegatedBulkImport}
+                    className="rounded-xl border border-[#5cbdb9]/40 bg-[#5cbdb9]/10 text-[#5cbdb9] px-3.5 py-1.5 text-xs font-mono font-bold hover:bg-[#5cbdb9]/20 transition-all cursor-pointer"
                   >
-                    <div>
-                      <span className="font-bold text-white block">
-                        {u.name}
-                      </span>
-                      <span className="text-[#8B93A3]">
-                        {u.hall} • {u.lane}
-                      </span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-[#173226] text-[#3ED98A] font-bold">
-                      SCANNER ACTIVE
+                    Import Delegated Roster
+                  </button>
+                  {bulkImportStatus && (
+                    <span className="text-xs font-mono text-[#38ef7d] font-bold">
+                      {bulkImportStatus}
                     </span>
-                  </div>
-                ))}
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* DELEGATED PATH B GUEST REGISTRATION PORTAL */}
-        <div className="panel space-y-4">
-          <div className="panel-head">
-            <h3>Path B: Delegated Venue Guest Registration</h3>
-            <span className="text-xs font-mono text-[#3ED98A]">
-              Delegated Permission Active
-            </span>
-          </div>
-
-          <p className="text-xs text-[#8B93A3]">
-            Event Centre teams can register VIP guests or import gate lists
-            directly on behalf of host organizers.
-          </p>
-
-          {delegatedSuccessMsg && (
-            <div className="p-3 rounded-lg bg-[#173226] border border-[#3ED98A] text-[#3ED98A] text-xs font-mono font-bold text-center">
-              {delegatedSuccessMsg}
+        {/* RIGHT COLUMN — INCOMING BOOKING REQUESTS */}
+        <div className="lg:col-span-6 space-y-6">
+          <div className="rounded-3xl border border-border/60 bg-card/60 p-6 space-y-4 card-glow">
+            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <h3 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                Incoming Hall Booking Requests
+              </h3>
+              <span className="text-xs font-mono text-muted-foreground">{bookings.length} Requests</span>
             </div>
-          )}
 
-          <div className="field-row">
-            <div className="field">
-              <label>Guest Full Name</label>
+            <div className="space-y-4">
+              {bookings.length > 0 ? (
+                bookings.map((b) => (
+                  <div key={b.id} className="p-4 rounded-2xl bg-navy-900 border border-border/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold font-heading text-foreground">{b.eventName}</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
+                        b.status === 'accepted'
+                          ? 'bg-[#38ef7d]/10 text-[#38ef7d] border-[#38ef7d]/30'
+                          : b.status === 'declined'
+                          ? 'bg-destructive/10 text-destructive border-destructive/30'
+                          : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                      }`}>
+                        {b.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono text-muted-foreground">
+                      <div>Organizer: <strong className="text-foreground">{b.organizerName}</strong></div>
+                      <div>Date: <strong className="text-foreground">{b.requestedDate}</strong></div>
+                      <div>Est. Guests: <strong className="text-foreground">{b.guestEstimate.toLocaleString()}</strong></div>
+                    </div>
+
+                    {b.status === 'requested' && (
+                      <div className="flex gap-2 pt-2 border-t border-border/40">
+                        <button
+                          onClick={() => updateBookingStatus(b.id, 'accepted')}
+                          className="flex-1 py-2 rounded-xl bg-[#38ef7d] text-navy-900 text-xs font-mono font-bold hover:bg-[#38ef7d]/90 cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <Check className="h-4 w-4" /> Approve Booking
+                        </button>
+                        <button
+                          onClick={() => updateBookingStatus(b.id, 'declined')}
+                          className="flex-1 py-2 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-xs font-mono font-bold hover:bg-destructive/20 cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <X className="h-4 w-4" /> Decline
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-xs font-mono text-muted-foreground bg-navy-900/40 rounded-2xl border border-border/40 space-y-2">
+                  <Clock className="h-8 w-8 text-muted-foreground/60 mx-auto" />
+                  <div>No pending booking requests. Incoming organizer requests will appear here.</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ADD HALL MODAL */}
+      {showAddHallModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-navy-900 border border-border/60 rounded-3xl p-6 space-y-4 shadow-2xl">
+            <h3 className="font-heading text-lg font-bold text-foreground">Add New Hall Facility</h3>
+            <div className="space-y-3 text-xs font-mono">
               <input
                 type="text"
-                placeholder="e.g. Chief Adeleke Johnson"
-                value={delegatedGuestName}
-                onChange={(e) => setDelegatedGuestName(e.target.value)}
+                placeholder="Hall Name (e.g. VIP Marquee)"
+                value={newHallName}
+                onChange={(e) => setNewHallName(e.target.value)}
+                className="w-full rounded-xl border border-border/80 bg-card px-3.5 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
               />
-            </div>
-            <div className="field">
-              <label>Phone / WhatsApp</label>
               <input
-                type="tel"
-                placeholder="080..."
-                value={delegatedGuestPhone}
-                onChange={(e) => setDelegatedGuestPhone(e.target.value)}
+                type="number"
+                placeholder="Capacity Cap (e.g. 2500)"
+                value={newHallCap}
+                onChange={(e) => setNewHallCap(e.target.value)}
+                className="w-full rounded-xl border border-border/80 bg-card px-3.5 py-2.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+              />
+              <input
+                type="number"
+                placeholder="Daily Price in NGN (e.g. 4500000)"
+                value={newHallPrice}
+                onChange={(e) => setNewHallPrice(e.target.value)}
+                className="w-full rounded-xl border border-border/80 bg-card px-3.5 py-2.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
               />
             </div>
-          </div>
-
-          <div className="field-row">
-            <div className="field">
-              <label>Category</label>
-              <select
-                value={delegatedCategory}
-                onChange={(e) =>
-                  setDelegatedCategory(e.target.value as "VIP" | "Regular")
-                }
-              >
-                <option value="VIP">VIP Guest</option>
-                <option value="Regular">Regular Guest</option>
-              </select>
-            </div>
-            <div className="field flex items-end">
+            <div className="flex gap-3 pt-2">
               <button
-                onClick={handleRegisterDelegatedGuest}
-                className="btn btn-go w-full font-mono font-bold"
+                onClick={() => setShowAddHallModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-border/60 bg-card text-xs font-mono text-foreground cursor-pointer"
               >
-                + Register Delegated Guest
+                Cancel
+              </button>
+              <button
+                onClick={handleAddHall}
+                className="flex-1 py-2.5 rounded-xl bg-primary text-xs font-mono font-bold text-primary-foreground cursor-pointer"
+              >
+                Save Hall Facility
               </button>
             </div>
           </div>
-
-          <div className="divider" />
-
-          <div className="space-y-2">
-            <label>
-              Delegated Bulk CSV Import (One guest per line: Name, Phone,
-              VIP/Regular)
-            </label>
-            <textarea
-              rows={3}
-              placeholder={`Alhaji Aliko Dangote, 08031112222, VIP\nDr. Ngozi Okonjo, 08099998888, VIP`}
-              value={delegatedBulkText}
-              onChange={(e) => setDelegatedBulkText(e.target.value)}
-            />
-            <button
-              onClick={handleDelegatedBulkImport}
-              className="btn btn-ghost font-mono text-xs"
-            >
-              {bulkImportStatus || "Import Delegated Venue List"}
-            </button>
-          </div>
         </div>
+      )}
 
-        {/* ACCEPTED BOOKINGS SUMMARY */}
-        <div className="panel space-y-4">
-          <div className="panel-head">
-            <h3>Approved Venue Events &amp; Delegated Access History</h3>
-          </div>
-
-          {acceptedBookings.length > 0 ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>Event &amp; Host</th>
-                  <th>Requested Date</th>
-                  <th>Guests Est.</th>
-                  <th>Permissions Granted</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {acceptedBookings.map((b) => (
-                  <tr key={b.id}>
-                    <td>
-                      <b>{b.eventName}</b>
-                      <br />
-                      <span className="text-[11px] text-[#8B93A3]">
-                        {b.organizerName}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="font-mono text-xs text-[#3ED98A]">
-                        {b.requestedDate}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="font-mono text-xs">
-                        {b.guestEstimate}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="code-chip text-[10px] text-[#3ED98A]">
-                        register_guests, scan_guests
-                      </span>
-                    </td>
-                    <td>
-                      <span className="status-pill in">Approved</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="empty">No approved booking history yet.</div>
-          )}
-        </div>
-      </div>
     </section>
   );
 };

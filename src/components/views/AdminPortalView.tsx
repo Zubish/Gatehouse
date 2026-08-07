@@ -1,225 +1,132 @@
-import React, { useState } from "react";
-import { useGatehouse } from "../../context/GatehouseContext";
+import React from 'react';
+import { useGatehouse } from '../../context/GatehouseContext';
+import { ShieldAlert, Server, Database, Activity, Building, Users, Calendar } from 'lucide-react';
 
 export const AdminPortalView: React.FC = () => {
-  const { eventCentres, events, guests } = useGatehouse();
-
-  const [usersList, setUsersList] = useState([
-    {
-      id: "u_org_1",
-      name: "Chidinma Okoro",
-      email: "chidinma@xquisit.ng",
-      role: "organizer",
-      status: "active",
-      joined: "Aug 2, 2026",
-    },
-    {
-      id: "u_centre_1",
-      name: "Eko Convention Centre",
-      email: "info@ekohotels.com",
-      role: "centre",
-      status: "active",
-      joined: "Jul 28, 2026",
-    },
-    {
-      id: "u_org_2",
-      name: "Babatunde Raji",
-      email: "baba@events.ng",
-      role: "organizer",
-      status: "active",
-      joined: "Aug 4, 2026",
-    },
-    {
-      id: "u_centre_2",
-      name: "Harbour Point VI",
-      email: "management@harbourpoint.ng",
-      role: "centre",
-      status: "active",
-      joined: "Jul 30, 2026",
-    },
-  ]);
-
-  const [statusMsg, setStatusMsg] = useState("");
-
-  const totalUsers = usersList.length;
-  const totalVenues = eventCentres.length;
-  const totalEvents = events.length;
-  const totalCheckins = guests.filter((g) => g.status === "in").length;
-
-  const toggleUserStatus = (id: string) => {
-    setUsersList((prev) =>
-      prev.map((u) => {
-        if (u.id === id) {
-          const nextStatus = u.status === "active" ? "suspended" : "active";
-          setStatusMsg(
-            `User ${u.name} status set to ${nextStatus.toUpperCase()}`,
-          );
-          setTimeout(() => setStatusMsg(""), 2500);
-          return { ...u, status: nextStatus };
-        }
-        return u;
-      }),
-    );
-  };
+  const { eventCentres, events, guests, bookings } = useGatehouse();
 
   return (
-    <section className="view active" id="view-admin-portal">
-      <div className="space-y-6">
-        {/* HEADER */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#262D38] pb-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#331B1D] text-[#E5555C] font-mono text-xs font-bold border border-[#E5555C]/40 mb-2">
-              <span className="w-2 h-2 rounded-full bg-[#E5555C] animate-pulse" />
-              SUPER-ADMIN PLATFORM OVERSIGHT (PHASE 8)
-            </div>
-            <h2 className="text-2xl font-bold font-['Space_Grotesk'] text-[#EDEFF3]">
-              Gatehouse Platform Super Admin Portal
-            </h2>
-            <p className="text-xs font-mono text-[#8B93A3]">
-              System-wide metrics, tenant accounts, platform audit logs &amp;
-              enterprise subscription tiers.
-            </p>
+    <section className="view active space-y-8" id="view-admin">
+      
+      {/* HEADER BAR */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-6">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-destructive/10 text-destructive font-mono text-xs font-bold border border-destructive/30">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            SYSTEM MASTER CONTROL ROOM
           </div>
-
-          <div className="p-2.5 rounded-xl bg-[#151A22] border border-[#262D38] text-xs font-mono text-[#3ED98A] font-bold">
-            🛡️ Platform Health: 99.99% Uptime (Neon DB + Vercel Serverless)
-          </div>
+          <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground">
+            Gatehouse Platform Admin Control
+          </h2>
+          <p className="text-xs font-mono text-muted-foreground">
+            Master Infrastructure Status • Database Connections &amp; License Verifications
+          </p>
         </div>
 
-        {/* 4 SYSTEM METRICS CARDS */}
-        <div className="stat-grid">
-          <div className="stat-card">
-            <div className="num text-[#3ED98A]">{totalUsers}</div>
-            <div className="label">Registered Platform Accounts</div>
-          </div>
-          <div className="stat-card">
-            <div className="num">{totalVenues}</div>
-            <div className="label">Verified Event Facilities</div>
-          </div>
-          <div className="stat-card go">
-            <div className="num">{totalEvents}</div>
-            <div className="label">Active Events Hosted</div>
-          </div>
-          <div className="stat-card alert">
-            <div className="num">{totalCheckins}</div>
-            <div className="label">Total Verified Gate Passes</div>
-          </div>
-        </div>
-
-        {/* STATUS BANNER */}
-        {statusMsg && (
-          <div className="p-3.5 rounded-xl bg-[#173226] border border-[#3ED98A] text-[#3ED98A] text-xs font-mono font-bold text-center">
-            {statusMsg}
-          </div>
-        )}
-
-        {/* PLATFORM USERS ACCOUNTS TABLE */}
-        <div className="panel space-y-4">
-          <div className="panel-head">
-            <h3>Tenant Accounts &amp; Access Controls</h3>
-            <span className="text-xs font-mono text-[#8B93A3]">
-              Super Admin Actions
-            </span>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>User / Organization</th>
-                <th>Email Address</th>
-                <th>Role Tier</th>
-                <th>Joined Date</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usersList.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <strong className="text-white">{u.name}</strong>
-                  </td>
-                  <td>
-                    <span className="font-mono text-xs text-[#8B93A3]">
-                      {u.email}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      className={`tag text-[10px] ${u.role === "centre" ? "tag-vip" : "tag-regular"}`}
-                    >
-                      {u.role.toUpperCase()}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="font-mono text-xs">{u.joined}</span>
-                  </td>
-                  <td>
-                    <span
-                      className={`status-pill ${u.status === "active" ? "in" : "out"}`}
-                    >
-                      {u.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => toggleUserStatus(u.id)}
-                      className={`btn btn-sm font-mono ${
-                        u.status === "active" ? "btn-danger" : "btn-go"
-                      }`}
-                    >
-                      {u.status === "active"
-                        ? "Suspend Account"
-                        : "Activate Account"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* SYSTEM AUDIT LOG FEED */}
-        <div className="panel space-y-4">
-          <div className="panel-head">
-            <h3>Platform System Security Audit Logs</h3>
-            <span className="text-xs font-mono text-[#3ED98A]">
-              Real-Time Security Feed
-            </span>
-          </div>
-
-          <div className="space-y-2 text-xs font-mono">
-            <div className="p-2.5 rounded-lg bg-[#080c14] border border-[#262D38] flex justify-between text-[#8B93A3]">
-              <span>
-                🔒 <strong>AUTH_JWT_SIGN:</strong> User chidinma@xquisit.ng
-                signed in via JWT token session.
-              </span>
-              <span>2 mins ago</span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-[#080c14] border border-[#262D38] flex justify-between text-[#8B93A3]">
-              <span>
-                🏢 <strong>VENUE_DELEGATION:</strong> Eko Convention Centre
-                granted Path B delegation for EVT-8921.
-              </span>
-              <span>12 mins ago</span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-[#080c14] border border-[#262D38] flex justify-between text-[#3ED98A]">
-              <span>
-                ⚡ <strong>HMAC_SCAN_OK:</strong> Gate Camera Agent verified
-                guest Babatunde Raji (EVT-TBK88).
-              </span>
-              <span>24 mins ago</span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-[#080c14] border border-[#262D38] flex justify-between text-[#F0A93B]">
-              <span>
-                🔓 <strong>HARDWARE_RELAY:</strong> Turnstile pulse sent to Gate
-                Lane #01 (3000ms duration).
-              </span>
-              <span>35 mins ago</span>
-            </div>
-          </div>
+        <div className="inline-flex items-center gap-2 rounded-full border border-[#38ef7d]/30 bg-[#38ef7d]/10 px-3.5 py-1.5 text-xs font-mono text-[#38ef7d]">
+          <span className="h-2 w-2 rounded-full bg-[#38ef7d] animate-pulse" />
+          Neon PostgreSQL Connected • 99.99% SLA Uptime
         </div>
       </div>
+
+      {/* MASTER METRICS CARDS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        
+        <div className="rounded-3xl border border-border/60 bg-card/60 p-6 space-y-2 card-glow">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-mono uppercase font-bold">Active Events</span>
+            <Calendar className="h-4 w-4 text-primary" />
+          </div>
+          <div className="font-heading text-3xl font-extrabold text-foreground">{events.length}</div>
+          <div className="text-[10px] font-mono text-muted-foreground">Platform Registered Events</div>
+        </div>
+
+        <div className="rounded-3xl border border-border/60 bg-card/60 p-6 space-y-2 card-glow">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-mono uppercase font-bold">Verified Venues</span>
+            <Building className="h-4 w-4 text-[#5cbdb9]" />
+          </div>
+          <div className="font-heading text-3xl font-extrabold text-foreground">{eventCentres.length}</div>
+          <div className="text-[10px] font-mono text-muted-foreground">Nigerian Event Facilities</div>
+        </div>
+
+        <div className="rounded-3xl border border-[#38ef7d]/40 bg-card/60 p-6 space-y-2 card-glow">
+          <div className="flex items-center justify-between text-[#38ef7d]">
+            <span className="text-xs font-mono uppercase font-bold">Issued Guest Passes</span>
+            <Users className="h-4 w-4 text-[#38ef7d]" />
+          </div>
+          <div className="font-heading text-3xl font-extrabold text-[#38ef7d]">{guests.length}</div>
+          <div className="text-[10px] font-mono text-muted-foreground">Cryptographic QR Tokens</div>
+        </div>
+
+        <div className="rounded-3xl border border-border/60 bg-card/60 p-6 space-y-2 card-glow">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-mono uppercase font-bold">Booking Requests</span>
+            <Activity className="h-4 w-4 text-amber-400" />
+          </div>
+          <div className="font-heading text-3xl font-extrabold text-foreground">{bookings.length}</div>
+          <div className="text-[10px] font-mono text-muted-foreground">Venue Reservations</div>
+        </div>
+
+      </div>
+
+      {/* DATABASE & SYSTEM HEALTH PANEL */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        
+        {/* DATABASE STATUS */}
+        <div className="rounded-3xl border border-border/60 bg-card/60 p-6 space-y-4 card-glow">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2">
+              <Database className="h-4 w-4 text-[#38ef7d]" />
+              <h3 className="font-heading text-base font-bold text-foreground">Database Engine Health</h3>
+            </div>
+            <span className="text-xs font-mono text-[#38ef7d]">Connected</span>
+          </div>
+
+          <div className="space-y-3 text-xs font-mono">
+            <div className="p-3 rounded-2xl bg-navy-900 border border-border/60 flex items-center justify-between">
+              <span className="text-muted-foreground">Primary Database Provider</span>
+              <span className="text-foreground font-bold">Neon Serverless PostgreSQL</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-navy-900 border border-border/60 flex items-center justify-between">
+              <span className="text-muted-foreground">Connection Pool Size</span>
+              <span className="text-foreground font-bold">20 Max Connections</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-navy-900 border border-border/60 flex items-center justify-between">
+              <span className="text-muted-foreground">SSL Encryption</span>
+              <span className="text-[#38ef7d] font-bold">TLS 1.3 Active</span>
+            </div>
+          </div>
+        </div>
+
+        {/* SECURITY & COMPLIANCE */}
+        <div className="rounded-3xl border border-border/60 bg-card/60 p-6 space-y-4 card-glow">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2">
+              <Server className="h-4 w-4 text-[#5cbdb9]" />
+              <h3 className="font-heading text-base font-bold text-foreground">Statutory &amp; Data Compliance</h3>
+            </div>
+            <span className="text-xs font-mono text-[#5cbdb9]">NDPA 2023 Compliant</span>
+          </div>
+
+          <div className="space-y-3 text-xs font-mono">
+            <div className="p-3 rounded-2xl bg-navy-900 border border-border/60 flex items-center justify-between">
+              <span className="text-muted-foreground">Jurisdiction Realm</span>
+              <span className="text-foreground font-bold">Federal Republic of Nigeria</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-navy-900 border border-border/60 flex items-center justify-between">
+              <span className="text-muted-foreground">Data Controller Reg</span>
+              <span className="text-foreground font-bold">NDPC Registered</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-navy-900 border border-border/60 flex items-center justify-between">
+              <span className="text-muted-foreground">Pass Signature Security</span>
+              <span className="text-[#38ef7d] font-bold">HMAC-SHA256 Protocol</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </section>
   );
 };

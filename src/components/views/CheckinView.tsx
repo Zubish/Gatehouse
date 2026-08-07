@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useGatehouse } from '../../context/GatehouseContext';
 import { generateQrGrid } from '../../utils/qrGenerator';
 import type { Guest } from '../../types';
-import { QrCode, Camera, Usb, ShieldCheck, CheckCircle2, AlertTriangle, Lock } from 'lucide-react';
+import { QrCode, Camera, Usb, ShieldCheck, CheckCircle2, AlertTriangle, Lock, Video, StopCircle } from 'lucide-react';
 
 function fmtTime(d: Date): string {
   return d.toLocaleTimeString([], {
@@ -19,6 +19,11 @@ export const CheckinView: React.FC = () => {
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [cameraSimulating, setCameraSimulating] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
+
+  // Real HTML5 Camera Stream State
+  const [isLiveWebcam, setIsLiveWebcam] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
 
   // Hardware State
   const [turnstileMsg, setTurnstileMsg] = useState('');
@@ -63,6 +68,30 @@ export const CheckinView: React.FC = () => {
     } else {
       setStatusBanner({ show: false, type: 'ok', message: '' });
     }
+  };
+
+  const startWebcamStream = async () => {
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        mediaStreamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setIsLiveWebcam(true);
+      }
+    } catch (e) {
+      console.error('Camera permission or device error:', e);
+      handleSimulateCameraScan();
+    }
+  };
+
+  const stopWebcamStream = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setIsLiveWebcam(false);
   };
 
   const handleSimulateCameraScan = async () => {
@@ -147,7 +176,7 @@ export const CheckinView: React.FC = () => {
             Gate Scanner &amp; Hardware Verification
           </h2>
           <p className="text-xs font-mono text-muted-foreground">
-            {activeEvent.name} • 2.5s Scan Throughput • Turnstile &amp; Camera Hardware Relay
+            {activeEvent.name} • 2.5s Scan Throughput • HTML5 Camera Stream &amp; Turnstile Hardware Relay
           </p>
         </div>
 
@@ -174,11 +203,15 @@ export const CheckinView: React.FC = () => {
             <Camera className="h-4 w-4 text-[#5cbdb9]" />
             <div>
               <div className="text-xs font-bold text-foreground">Webcam / Mobile Camera</div>
-              <div className="text-[10px] font-mono text-muted-foreground">HTML5 Video Stream Stream API</div>
+              <div className="text-[10px] font-mono text-muted-foreground">HTML5 Video Stream API</div>
             </div>
           </div>
-          <span className="text-[10px] font-mono font-bold text-[#38ef7d] bg-[#38ef7d]/10 px-2 py-0.5 rounded-full border border-[#38ef7d]/30">
-            Ready
+          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+            isLiveWebcam
+              ? 'text-[#38ef7d] bg-[#38ef7d]/10 border-[#38ef7d]/30'
+              : 'text-[#5cbdb9] bg-[#5cbdb9]/10 border-[#5cbdb9]/30'
+          }`}>
+            {isLiveWebcam ? 'Live Stream' : 'Ready'}
           </span>
         </div>
 
@@ -225,13 +258,15 @@ export const CheckinView: React.FC = () => {
                 <Camera className="h-4 w-4 text-[#5cbdb9]" />
                 <h3 className="font-heading text-sm font-bold text-foreground">Gate Camera Feed</h3>
               </div>
-              <span className="text-[10px] font-mono text-muted-foreground">Sub-2.5s Scan Target</span>
+              <span className="text-[10px] font-mono text-muted-foreground">HTML5 getUserMedia</span>
             </div>
 
             <div className="relative aspect-video rounded-2xl bg-navy-900 border border-border/60 overflow-hidden flex flex-col items-center justify-center space-y-3 p-4">
-              <div className="absolute inset-4 border-2 border-dashed border-[#5cbdb9]/40 rounded-xl pointer-events-none" />
+              <div className="absolute inset-4 border-2 border-dashed border-[#5cbdb9]/40 rounded-xl pointer-events-none z-10" />
               
-              {cameraSimulating ? (
+              {isLiveWebcam ? (
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover rounded-xl" />
+              ) : cameraSimulating ? (
                 <div className="space-y-2 text-center">
                   <QrCode className="h-10 w-10 text-[#38ef7d] animate-bounce mx-auto" />
                   <div className="text-xs font-mono font-bold text-[#38ef7d]">
@@ -242,16 +277,35 @@ export const CheckinView: React.FC = () => {
                 <>
                   <QrCode className="h-12 w-12 text-muted-foreground/60" />
                   <div className="text-xs font-mono text-muted-foreground text-center max-w-xs">
-                    Position guest QR access pass within frame or click below to verify.
+                    Position guest QR access pass within frame or click below to activate camera.
                   </div>
-                  <button
-                    onClick={handleSimulateCameraScan}
-                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-mono font-bold hover:bg-primary/90 transition-all cursor-pointer shadow-md"
-                  >
-                    📷 Scan Pass via Camera
-                  </button>
                 </>
               )}
+
+              <div className="relative z-20 flex gap-2 pt-2">
+                {!isLiveWebcam ? (
+                  <button
+                    onClick={startWebcamStream}
+                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-mono font-bold hover:bg-primary/90 transition-all cursor-pointer shadow-md flex items-center gap-2"
+                  >
+                    <Video className="h-4 w-4" /> Start Live Camera Stream
+                  </button>
+                ) : (
+                  <button
+                    onClick={stopWebcamStream}
+                    className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-xs font-mono font-bold hover:bg-destructive/90 transition-all cursor-pointer shadow-md flex items-center gap-2"
+                  >
+                    <StopCircle className="h-4 w-4" /> Stop Camera
+                  </button>
+                )}
+                
+                <button
+                  onClick={handleSimulateCameraScan}
+                  className="px-3 py-2 rounded-xl bg-secondary text-foreground text-xs font-mono font-bold hover:bg-card transition-all cursor-pointer"
+                >
+                  ⚡ Trigger Scan
+                </button>
+              </div>
             </div>
           </div>
 
