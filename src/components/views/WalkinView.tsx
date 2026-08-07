@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
-import { useGatehouse } from '../../context/GatehouseContext';
+import React, { useState } from "react";
+import { useGatehouse } from "../../context/GatehouseContext";
 
 export const WalkinView: React.FC = () => {
   const { addGuest, checkInGuest } = useGatehouse();
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [category, setCategory] = useState<'VIP' | 'Regular'>('Regular');
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [category, setCategory] = useState<"VIP" | "Regular">("Regular");
   const [statusBanner, setStatusBanner] = useState<{
     show: boolean;
-    type: 'ok' | 'err';
+    type: "ok" | "err";
     message: string;
-  }>({ show: false, type: 'ok', message: '' });
+  }>({ show: false, type: "ok", message: "" });
 
   const handleRegisterAndCheckin = async () => {
     if (!name.trim()) {
       setStatusBanner({
         show: true,
-        type: 'err',
-        message: 'Enter a name to register this guest.',
+        type: "err",
+        message: "Enter a name to register this guest.",
       });
       return;
     }
@@ -28,11 +28,11 @@ export const WalkinView: React.FC = () => {
       await checkInGuest(g.id);
       setStatusBanner({
         show: true,
-        type: 'ok',
+        type: "ok",
         message: `${g.name} registered and checked in — code ${g.code}.`,
       });
-      setName('');
-      setPhone('');
+      setName("");
+      setPhone("");
     }
   };
 
@@ -41,7 +41,8 @@ export const WalkinView: React.FC = () => {
       <h2 className="section-title">Walk-In Registration</h2>
       <div className="panel" style={{ maxWidth: 480 }}>
         <p className="helper" style={{ marginBottom: 16 }}>
-          For guests arriving without a code. They're added to the list and checked in immediately.
+          For guests arriving without a code. They're added to the list and
+          checked in immediately.
         </p>
 
         <div className="field">
@@ -71,7 +72,7 @@ export const WalkinView: React.FC = () => {
           <select
             id="walkinCategory"
             value={category}
-            onChange={(e) => setCategory(e.target.value as 'VIP' | 'Regular')}
+            onChange={(e) => setCategory(e.target.value as "VIP" | "Regular")}
           >
             <option value="Regular">Regular</option>
             <option value="VIP">VIP</option>
@@ -80,7 +81,7 @@ export const WalkinView: React.FC = () => {
 
         <button
           className="btn btn-go"
-          style={{ width: '100%' }}
+          style={{ width: "100%" }}
           id="walkinBtn"
           onClick={handleRegisterAndCheckin}
         >
@@ -88,7 +89,10 @@ export const WalkinView: React.FC = () => {
         </button>
 
         {statusBanner.show && (
-          <div className={`status-banner show ${statusBanner.type}`} id="walkinStatus">
+          <div
+            className={`status-banner show ${statusBanner.type}`}
+            id="walkinStatus"
+          >
             {statusBanner.message}
           </div>
         )}

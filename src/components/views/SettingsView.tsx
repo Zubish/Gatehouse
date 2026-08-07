@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useGatehouse } from '../../context/GatehouseContext';
+import React, { useState } from "react";
+import { useGatehouse } from "../../context/GatehouseContext";
 
 export const SettingsView: React.FC = () => {
   const { activeEvent, createEvent } = useGatehouse();
@@ -7,32 +7,39 @@ export const SettingsView: React.FC = () => {
   const [name, setName] = useState(activeEvent.name);
   const [date, setDate] = useState(activeEvent.date);
   const [capacity, setCapacity] = useState(activeEvent.capacity);
-  const [savedMsg, setSavedMsg] = useState('');
+  const [savedMsg, setSavedMsg] = useState("");
 
   // Notification Config State
   const [enableSms, setEnableSms] = useState(true);
   const [enableEmail, setEnableEmail] = useState(true);
-  const [testPhone, setTestPhone] = useState('08031234567');
-  const [smsTestMsg, setSmsTestMsg] = useState('');
+  const [testPhone, setTestPhone] = useState("08031234567");
+  const [smsTestMsg, setSmsTestMsg] = useState("");
 
   const handleSave = async () => {
-    const newEvt = await createEvent(name, date, '18:00', capacity, activeEvent.eventCentreId);
+    const newEvt = await createEvent(
+      name,
+      date,
+      "18:00",
+      capacity,
+      activeEvent.eventCentreId,
+    );
     if (newEvt) {
       setSavedMsg(`New Event Created: ${newEvt.name}`);
-      setTimeout(() => setSavedMsg(''), 2500);
+      setTimeout(() => setSavedMsg(""), 2500);
     }
   };
 
   const handleSendTestSms = () => {
     if (!testPhone.trim()) return;
-    setSmsTestMsg(`📱 Simulated SMS Pass sent to ${testPhone}: "Your GatePass QR code for ${activeEvent.name} is active. Code: ${activeEvent.registrationLinkToken}"`);
-    setTimeout(() => setSmsTestMsg(''), 4000);
+    setSmsTestMsg(
+      `📱 Simulated SMS Pass sent to ${testPhone}: "Your GatePass QR code for ${activeEvent.name} is active. Code: ${activeEvent.registrationLinkToken}"`,
+    );
+    setTimeout(() => setSmsTestMsg(""), 4000);
   };
 
   return (
     <section className="view active" id="view-settings">
       <div className="space-y-6 max-w-2xl mx-auto">
-        
         {/* HEADER */}
         <div className="border-b border-[#262D38] pb-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#173226] text-[#3ED98A] font-mono text-xs font-bold border border-[#3ED98A]/30 mb-2">
@@ -42,7 +49,8 @@ export const SettingsView: React.FC = () => {
             Event Setup &amp; Gate Settings
           </h2>
           <p className="text-xs font-mono text-[#8B93A3]">
-            Configure event parameters, SMS/Email pass dispatching, and capacity thresholds.
+            Configure event parameters, SMS/Email pass dispatching, and capacity
+            thresholds.
           </p>
         </div>
 
@@ -50,7 +58,9 @@ export const SettingsView: React.FC = () => {
         <div className="panel space-y-4">
           <div className="panel-head">
             <h3>General Event Settings</h3>
-            <span className="text-xs font-mono text-[#3ED98A]">Active Token: [{activeEvent.registrationLinkToken}]</span>
+            <span className="text-xs font-mono text-[#3ED98A]">
+              Active Token: [{activeEvent.registrationLinkToken}]
+            </span>
           </div>
 
           <div className="field">
@@ -90,7 +100,10 @@ export const SettingsView: React.FC = () => {
             </div>
           )}
 
-          <button className="btn btn-go font-mono font-bold w-full py-3" onClick={handleSave}>
+          <button
+            className="btn btn-go font-mono font-bold w-full py-3"
+            onClick={handleSave}
+          >
             Save Event Settings &amp; Re-Issue Token
           </button>
         </div>
@@ -99,7 +112,9 @@ export const SettingsView: React.FC = () => {
         <div className="panel space-y-4">
           <div className="panel-head">
             <h3>Automated Pass Dispatch &amp; SMS Dispatcher</h3>
-            <span className="text-xs font-mono text-[#F0A93B]">Twilio / Termii Gateway</span>
+            <span className="text-xs font-mono text-[#F0A93B]">
+              Twilio / Termii Gateway
+            </span>
           </div>
 
           <div className="space-y-3 text-xs font-mono">
@@ -110,7 +125,9 @@ export const SettingsView: React.FC = () => {
                 onChange={(e) => setEnableSms(e.target.checked)}
                 className="w-4 h-4 accent-[#3ED98A]"
               />
-              <span className="text-white">Enable Automated SMS Pass Dispatch on Registration</span>
+              <span className="text-white">
+                Enable Automated SMS Pass Dispatch on Registration
+              </span>
             </label>
 
             <label className="flex items-center gap-3 cursor-pointer">
@@ -120,7 +137,9 @@ export const SettingsView: React.FC = () => {
                 onChange={(e) => setEnableEmail(e.target.checked)}
                 className="w-4 h-4 accent-[#3ED98A]"
               />
-              <span className="text-white">Enable Email Digital QR Badge Attachment</span>
+              <span className="text-white">
+                Enable Email Digital QR Badge Attachment
+              </span>
             </label>
           </div>
 
@@ -152,7 +171,6 @@ export const SettingsView: React.FC = () => {
             </div>
           )}
         </div>
-
       </div>
     </section>
   );

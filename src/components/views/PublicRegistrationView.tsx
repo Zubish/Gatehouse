@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { useGatehouse } from '../../context/GatehouseContext';
-import { generateQrGrid } from '../../utils/qrGenerator';
-import type { Guest } from '../../types';
+import React, { useState } from "react";
+import { useGatehouse } from "../../context/GatehouseContext";
+import { generateQrGrid } from "../../utils/qrGenerator";
+import type { Guest } from "../../types";
 
 export const PublicRegistrationView: React.FC = () => {
   const { activeEvent, guests, addGuest } = useGatehouse();
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [category, setCategory] = useState<'VIP' | 'Regular'>('Regular');
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [category, setCategory] = useState<"VIP" | "Regular">("Regular");
   const [registeredGuest, setRegisteredGuest] = useState<Guest | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [copiedLinkMsg, setCopiedLinkMsg] = useState('');
+  const [copiedLinkMsg, setCopiedLinkMsg] = useState("");
 
   const currentCount = guests.length;
   const capacityReached = currentCount >= activeEvent.capacity;
@@ -22,8 +22,8 @@ export const PublicRegistrationView: React.FC = () => {
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(publicLink);
-    setCopiedLinkMsg('Copied to clipboard!');
-    setTimeout(() => setCopiedLinkMsg(''), 2000);
+    setCopiedLinkMsg("Copied to clipboard!");
+    setTimeout(() => setCopiedLinkMsg(""), 2000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +31,13 @@ export const PublicRegistrationView: React.FC = () => {
     if (!name.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
-    const newGuest = await addGuest(name, phone, category, 'self_registered', email);
+    const newGuest = await addGuest(
+      name,
+      phone,
+      category,
+      "self_registered",
+      email,
+    );
     setIsSubmitting(false);
 
     if (newGuest) {
@@ -39,12 +45,13 @@ export const PublicRegistrationView: React.FC = () => {
     }
   };
 
-  const qrGrid = registeredGuest ? generateQrGrid(registeredGuest.qrPayload) : [];
+  const qrGrid = registeredGuest
+    ? generateQrGrid(registeredGuest.qrPayload)
+    : [];
 
   return (
     <section className="view active" id="view-public-reg">
       <div className="max-w-xl mx-auto space-y-6">
-        
         {/* EVENT PUBLIC HEADER BANNER */}
         <div className="panel text-center space-y-3 border-[#3ED98A]/40 bg-gradient-to-b from-[#0f172a] to-[#173226]/30 p-8 rounded-2xl shadow-xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#173226] text-[#3ED98A] font-mono text-xs font-bold border border-[#3ED98A]/30">
@@ -57,7 +64,10 @@ export const PublicRegistrationView: React.FC = () => {
           </h2>
 
           <p className="text-xs text-[#94a3b8] font-mono">
-            🗓️ {activeEvent.date} at {activeEvent.startTime} • Public Token: <code className="text-[#3ED98A] font-bold">[{activeEvent.registrationLinkToken}]</code>
+            🗓️ {activeEvent.date} at {activeEvent.startTime} • Public Token:{" "}
+            <code className="text-[#3ED98A] font-bold">
+              [{activeEvent.registrationLinkToken}]
+            </code>
           </p>
 
           {/* SHAREABLE PUBLIC LINK BAR */}
@@ -67,18 +77,27 @@ export const PublicRegistrationView: React.FC = () => {
               onClick={handleCopyLink}
               className="btn btn-go btn-sm font-mono font-bold shrink-0"
             >
-              {copiedLinkMsg || 'Copy Link'}
+              {copiedLinkMsg || "Copy Link"}
             </button>
           </div>
 
           {/* CAPACITY METRICS */}
           <div className="flex justify-center items-center gap-4 text-xs font-mono pt-2">
             <span className="text-[#8B93A3]">
-              Registered: <strong className="text-white">{currentCount}</strong> / {activeEvent.capacity}
+              Registered: <strong className="text-white">{currentCount}</strong>{" "}
+              / {activeEvent.capacity}
             </span>
             <span className="text-[#262D38]">|</span>
-            <span className={spotsLeft > 0 ? 'text-[#3ED98A] font-bold' : 'text-[#E5555C] font-bold'}>
-              {spotsLeft > 0 ? `🔥 ${spotsLeft} Spots Remaining` : '⛔ Event Sold Out'}
+            <span
+              className={
+                spotsLeft > 0
+                  ? "text-[#3ED98A] font-bold"
+                  : "text-[#E5555C] font-bold"
+              }
+            >
+              {spotsLeft > 0
+                ? `🔥 ${spotsLeft} Spots Remaining`
+                : "⛔ Event Sold Out"}
             </span>
           </div>
         </div>
@@ -89,7 +108,10 @@ export const PublicRegistrationView: React.FC = () => {
             {capacityReached ? (
               <div className="p-6 rounded-xl bg-[#331B1D] border border-[#E5555C] text-[#E5555C] text-xs font-mono text-center font-bold space-y-2">
                 <div className="text-xl">⛔ REGISTRATION CLOSED</div>
-                <div>Capacity cap reached ({activeEvent.capacity} guests max). No further self-registrations allowed.</div>
+                <div>
+                  Capacity cap reached ({activeEvent.capacity} guests max). No
+                  further self-registrations allowed.
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -131,7 +153,9 @@ export const PublicRegistrationView: React.FC = () => {
                   <label>Select Ticket Tier</label>
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as 'VIP' | 'Regular')}
+                    onChange={(e) =>
+                      setCategory(e.target.value as "VIP" | "Regular")
+                    }
                   >
                     <option value="Regular">Regular Pass (Free Access)</option>
                     <option value="VIP">VIP Access Pass</option>
@@ -143,7 +167,9 @@ export const PublicRegistrationView: React.FC = () => {
                   disabled={isSubmitting}
                   className="btn btn-go w-full py-4 text-xs font-mono font-bold shadow-xl shadow-[#3ED98A]/20 hover:scale-[1.01] transition-transform"
                 >
-                  {isSubmitting ? 'Registering…' : '🎟️ Register & Claim Digital QR Gate Pass'}
+                  {isSubmitting
+                    ? "Registering…"
+                    : "🎟️ Register & Claim Digital QR Gate Pass"}
                 </button>
               </form>
             )}
@@ -151,23 +177,28 @@ export const PublicRegistrationView: React.FC = () => {
         ) : (
           /* INSTANT QR PASS BADGE RENDER */
           <div className="panel text-center space-y-6 border-[#3ED98A]/60 bg-[#0f172a] p-8 rounded-2xl shadow-2xl">
-            
             <div className="p-3 rounded-xl bg-[#173226] text-[#3ED98A] text-xs font-mono font-bold border border-[#3ED98A]/40">
               🎉 REGISTRATION SUCCESSFUL! YOUR GATEPASS QR CODE IS ACTIVE.
             </div>
 
             {/* BADGE CONTAINER */}
             <div className="badge max-w-sm mx-auto flex-col p-6 space-y-4 bg-[#1B2129] border border-[#262D38] rounded-2xl shadow-xl">
-              
               {/* SVG 21x21 QR Code Rendering */}
               <div className="w-48 h-48 bg-white rounded-xl p-3 mx-auto shadow-2xl flex items-center justify-center">
                 <svg viewBox="0 0 21 21" className="w-full h-full">
                   {qrGrid.map((row, r) =>
                     row.map((cell, c) =>
                       cell ? (
-                        <rect key={`${r}-${c}`} x={c} y={r} width="1" height="1" fill="#0D1015" />
-                      ) : null
-                    )
+                        <rect
+                          key={`${r}-${c}`}
+                          x={c}
+                          y={r}
+                          width="1"
+                          height="1"
+                          fill="#0D1015"
+                        />
+                      ) : null,
+                    ),
                   )}
                 </svg>
               </div>
@@ -176,25 +207,32 @@ export const PublicRegistrationView: React.FC = () => {
                 <div className="name text-xl font-bold font-['Space_Grotesk'] text-[#EDEFF3]">
                   {registeredGuest.name}
                 </div>
-                <div className="text-xs font-mono text-[#8B93A3]">{activeEvent.name}</div>
+                <div className="text-xs font-mono text-[#8B93A3]">
+                  {activeEvent.name}
+                </div>
                 <div className="code-chip inline-block mt-2 font-mono text-sm font-bold tracking-widest text-[#3ED98A]">
                   {registeredGuest.code}
                 </div>
                 <div>
                   <span
                     className={`tag inline-block ${
-                      registeredGuest.category === 'VIP' ? 'tag-vip' : 'tag-regular'
+                      registeredGuest.category === "VIP"
+                        ? "tag-vip"
+                        : "tag-regular"
                     }`}
                   >
                     {registeredGuest.category} PASS
                   </span>
                 </div>
               </div>
-
             </div>
 
             <p className="text-xs text-[#8B93A3] font-mono max-w-md mx-auto">
-              Show this QR pass or code chip <code className="text-[#3ED98A] font-bold">{registeredGuest.code}</code> at the gate entrance for express 2.5-second scan verification.
+              Show this QR pass or code chip{" "}
+              <code className="text-[#3ED98A] font-bold">
+                {registeredGuest.code}
+              </code>{" "}
+              at the gate entrance for express 2.5-second scan verification.
             </p>
 
             <button
@@ -205,7 +243,6 @@ export const PublicRegistrationView: React.FC = () => {
             </button>
           </div>
         )}
-
       </div>
     </section>
   );

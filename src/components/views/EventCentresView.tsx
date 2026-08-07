@@ -1,28 +1,34 @@
-import React, { useState } from 'react';
-import { useGatehouse } from '../../context/GatehouseContext';
-import type { EventCentre } from '../../types';
+import React, { useState } from "react";
+import { useGatehouse } from "../../context/GatehouseContext";
+import type { EventCentre } from "../../types";
 
 export const EventCentresView: React.FC = () => {
   const { eventCentres, createBookingRequest } = useGatehouse();
 
   // Search & Filter state
-  const [cityFilter, setCityFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedVenueModal, setSelectedVenueModal] = useState<EventCentre | null>(null);
+  const [cityFilter, setCityFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedVenueModal, setSelectedVenueModal] =
+    useState<EventCentre | null>(null);
 
   // Booking Modal State
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingVenue, setBookingVenue] = useState<EventCentre | null>(null);
-  const [eventName, setEventName] = useState('');
-  const [requestedDate, setRequestedDate] = useState('');
+  const [eventName, setEventName] = useState("");
+  const [requestedDate, setRequestedDate] = useState("");
   const [guestEstimate, setGuestEstimate] = useState(500);
-  const [bookingMessage, setBookingMessage] = useState('');
-  const [bookingSuccessMsg, setBookingSuccessMsg] = useState('');
+  const [bookingMessage, setBookingMessage] = useState("");
+  const [bookingSuccessMsg, setBookingSuccessMsg] = useState("");
 
   const filteredCentres = eventCentres.filter((c) => {
     const q = searchQuery.toLowerCase().trim();
-    const matchesQ = !q || c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q) || c.description.toLowerCase().includes(q);
-    const matchesCity = cityFilter === 'all' || c.city.toLowerCase() === cityFilter.toLowerCase();
+    const matchesQ =
+      !q ||
+      c.name.toLowerCase().includes(q) ||
+      c.address.toLowerCase().includes(q) ||
+      c.description.toLowerCase().includes(q);
+    const matchesCity =
+      cityFilter === "all" || c.city.toLowerCase() === cityFilter.toLowerCase();
     return matchesQ && matchesCity;
   });
 
@@ -41,29 +47,31 @@ export const EventCentresView: React.FC = () => {
       eventName,
       requestedDate,
       guestEstimate,
-      bookingMessage
+      bookingMessage,
     );
 
-    setBookingSuccessMsg(`Booking request sent to ${bookingVenue.name}! The venue management team will review and approve.`);
+    setBookingSuccessMsg(
+      `Booking request sent to ${bookingVenue.name}! The venue management team will review and approve.`,
+    );
     setTimeout(() => {
-      setBookingSuccessMsg('');
+      setBookingSuccessMsg("");
       setShowBookingModal(false);
-      setEventName('');
-      setRequestedDate('');
-      setBookingMessage('');
+      setEventName("");
+      setRequestedDate("");
+      setBookingMessage("");
     }, 2000);
   };
 
   return (
     <section className="view active" id="view-venues">
       <div className="space-y-6">
-        
         {/* HEADER & FILTERS */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="section-title">Verified Event Centres Directory</h2>
             <p className="text-xs font-mono text-[#8B93A3]">
-              Discover premium venues, inspect capacity limits, and send direct booking requests.
+              Discover premium venues, inspect capacity limits, and send direct
+              booking requests.
             </p>
           </div>
 
@@ -99,7 +107,10 @@ export const EventCentresView: React.FC = () => {
                 {/* Photo Thumbnail */}
                 <div className="h-44 bg-[#1B2129] relative overflow-hidden">
                   <img
-                    src={centre.photos[0] || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80'}
+                    src={
+                      centre.photos[0] ||
+                      "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80"
+                    }
                     alt={centre.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -121,7 +132,11 @@ export const EventCentresView: React.FC = () => {
                   </p>
 
                   <div className="text-xs font-mono text-[#94a3b8] pt-2 border-t border-[#262D38]">
-                    Capacity: <strong className="text-white">{centre.capacityMin} - {centre.capacityMax.toLocaleString()} guests</strong>
+                    Capacity:{" "}
+                    <strong className="text-white">
+                      {centre.capacityMin} -{" "}
+                      {centre.capacityMax.toLocaleString()} guests
+                    </strong>
                   </div>
 
                   <div className="text-xs font-mono text-[#F0A93B] font-semibold">
@@ -131,7 +146,10 @@ export const EventCentresView: React.FC = () => {
                   {/* Amenities */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {centre.amenities.map((a, i) => (
-                      <span key={i} className="text-[10px] font-mono bg-[#1B2129] text-[#8B93A3] px-2 py-0.5 rounded border border-[#262D38]">
+                      <span
+                        key={i}
+                        className="text-[10px] font-mono bg-[#1B2129] text-[#8B93A3] px-2 py-0.5 rounded border border-[#262D38]"
+                      >
                         {a}
                       </span>
                     ))}
@@ -154,7 +172,6 @@ export const EventCentresView: React.FC = () => {
                   Request Booking
                 </button>
               </div>
-
             </div>
           ))}
         </div>
@@ -163,7 +180,6 @@ export const EventCentresView: React.FC = () => {
         {selectedVenueModal && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="glass-card max-w-xl w-full rounded-2xl border border-[#3ED98A]/30 overflow-hidden space-y-4 p-6 bg-[#0f172a]">
-              
               <div className="flex items-center justify-between border-b border-[#262D38] pb-3">
                 <h3 className="text-xl font-bold font-['Space_Grotesk'] text-[#EDEFF3]">
                   {selectedVenueModal.name}
@@ -185,10 +201,21 @@ export const EventCentresView: React.FC = () => {
               </div>
 
               <div className="space-y-2 text-xs text-[#94a3b8]">
-                <p><strong>Address:</strong> {selectedVenueModal.address}, {selectedVenueModal.city}</p>
+                <p>
+                  <strong>Address:</strong> {selectedVenueModal.address},{" "}
+                  {selectedVenueModal.city}
+                </p>
                 <p>{selectedVenueModal.description}</p>
-                <p><strong>Capacity:</strong> {selectedVenueModal.capacityMin} to {selectedVenueModal.capacityMax.toLocaleString()} guests</p>
-                <p><strong>Price Range:</strong> <span className="text-[#F0A93B] font-bold">{selectedVenueModal.priceRange}</span></p>
+                <p>
+                  <strong>Capacity:</strong> {selectedVenueModal.capacityMin} to{" "}
+                  {selectedVenueModal.capacityMax.toLocaleString()} guests
+                </p>
+                <p>
+                  <strong>Price Range:</strong>{" "}
+                  <span className="text-[#F0A93B] font-bold">
+                    {selectedVenueModal.priceRange}
+                  </span>
+                </p>
               </div>
 
               <div className="pt-4 flex gap-3">
@@ -205,7 +232,6 @@ export const EventCentresView: React.FC = () => {
                   Book Venue Now &rarr;
                 </button>
               </div>
-
             </div>
           </div>
         )}
@@ -214,14 +240,14 @@ export const EventCentresView: React.FC = () => {
         {showBookingModal && bookingVenue && (
           <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="glass-card max-w-md w-full rounded-2xl border border-[#3ED98A]/50 p-6 bg-[#0f172a] space-y-4">
-              
               <div className="flex items-center justify-between border-b border-[#262D38] pb-3">
                 <div>
                   <h3 className="text-lg font-bold font-['Space_Grotesk'] text-white">
                     Request Booking: {bookingVenue.name}
                   </h3>
                   <div className="text-[11px] font-mono text-[#3ED98A]">
-                    {bookingVenue.city} • Capacity Max: {bookingVenue.capacityMax.toLocaleString()}
+                    {bookingVenue.city} • Capacity Max:{" "}
+                    {bookingVenue.capacityMax.toLocaleString()}
                   </div>
                 </div>
                 <button
@@ -299,11 +325,9 @@ export const EventCentresView: React.FC = () => {
                   </div>
                 </form>
               )}
-
             </div>
           </div>
         )}
-
       </div>
     </section>
   );

@@ -4,7 +4,7 @@
  */
 
 /** Secret key used for signing HMAC QR tokens */
-const HMAC_SECRET = 'GATEHOUSE-HMAC-SECURE-KEY-2026';
+const HMAC_SECRET = "GATEHOUSE-HMAC-SECURE-KEY-2026";
 
 export interface QrTokenPayload {
   e: string; // Event ID
@@ -27,7 +27,11 @@ export interface QrVerificationResult {
  * @param code Guest ticket code (e.g. EVT-9F2K1)
  * @returns JSON string containing payload and signature
  */
-export function signQrToken(eventId: string, guestId: string, code: string): string {
+export function signQrToken(
+  eventId: string,
+  guestId: string,
+  code: string,
+): string {
   const raw = `${eventId}:${guestId}:${code}:${HMAC_SECRET}`;
   let hash = 0;
   for (let i = 0; i < raw.length; i++) {
@@ -66,13 +70,21 @@ export function verifyQrToken(qrPayloadStr: string): QrVerificationResult {
  */
 export function generateQrGrid(seed: string): boolean[][] {
   const size = 21;
-  const grid: boolean[][] = Array.from({ length: size }, () => Array(size).fill(false));
+  const grid: boolean[][] = Array.from({ length: size }, () =>
+    Array(size).fill(false),
+  );
 
   // Draw 7x7 Finder Patterns at Top-Left, Top-Right, and Bottom-Left corners
   const drawFinder = (startR: number, startC: number) => {
     for (let r = 0; r < 7; r++) {
       for (let c = 0; c < 7; c++) {
-        if (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
+        if (
+          r === 0 ||
+          r === 6 ||
+          c === 0 ||
+          c === 6 ||
+          (r >= 2 && r <= 4 && c >= 2 && c <= 4)
+        ) {
           grid[startR + r][startC + c] = true;
         }
       }

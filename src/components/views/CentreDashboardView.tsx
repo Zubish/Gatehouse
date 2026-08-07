@@ -1,43 +1,57 @@
-import React, { useState } from 'react';
-import { useGatehouse } from '../../context/GatehouseContext';
+import React, { useState } from "react";
+import { useGatehouse } from "../../context/GatehouseContext";
 
 export const CentreDashboardView: React.FC = () => {
-  const { 
-    bookings, 
-    updateBookingStatus, 
-    delegations, 
-    addGuest, 
-    bulkImportGuests 
+  const {
+    bookings,
+    updateBookingStatus,
+    delegations,
+    addGuest,
+    bulkImportGuests,
   } = useGatehouse();
 
   // Centre Delegated Guest Registration State
-  const [delegatedGuestName, setDelegatedGuestName] = useState('');
-  const [delegatedGuestPhone, setDelegatedGuestPhone] = useState('');
-  const [delegatedCategory, setDelegatedCategory] = useState<'VIP' | 'Regular'>('VIP');
-  const [delegatedSuccessMsg, setDelegatedSuccessMsg] = useState('');
+  const [delegatedGuestName, setDelegatedGuestName] = useState("");
+  const [delegatedGuestPhone, setDelegatedGuestPhone] = useState("");
+  const [delegatedCategory, setDelegatedCategory] = useState<"VIP" | "Regular">(
+    "VIP",
+  );
+  const [delegatedSuccessMsg, setDelegatedSuccessMsg] = useState("");
 
   // Centre Delegated Bulk State
-  const [delegatedBulkText, setDelegatedBulkText] = useState('');
-  const [bulkImportStatus, setBulkImportStatus] = useState('');
+  const [delegatedBulkText, setDelegatedBulkText] = useState("");
+  const [bulkImportStatus, setBulkImportStatus] = useState("");
 
   // Multi-Hall Venue Spaces State
-  const [selectedHall, setSelectedHall] = useState('Grand Ballroom');
-  const [usherName, setUsherName] = useState('');
-  const [assignedUshers, setAssignedUshers] = useState<{ id: string; name: string; hall: string; lane: string }[]>([
-    { id: 'ush_1', name: 'Emeka Nnamdi', hall: 'Grand Ballroom', lane: 'VIP Gate Lane 01' },
-    { id: 'ush_2', name: 'Fatima Bello', hall: 'Hall A', lane: 'Main Gate Lane 03' },
+  const [selectedHall, setSelectedHall] = useState("Grand Ballroom");
+  const [usherName, setUsherName] = useState("");
+  const [assignedUshers, setAssignedUshers] = useState<
+    { id: string; name: string; hall: string; lane: string }[]
+  >([
+    {
+      id: "ush_1",
+      name: "Emeka Nnamdi",
+      hall: "Grand Ballroom",
+      lane: "VIP Gate Lane 01",
+    },
+    {
+      id: "ush_2",
+      name: "Fatima Bello",
+      hall: "Hall A",
+      lane: "Main Gate Lane 03",
+    },
   ]);
-  const [usherAssignMsg, setUsherAssignMsg] = useState('');
+  const [usherAssignMsg, setUsherAssignMsg] = useState("");
 
-  const pendingBookings = bookings.filter((b) => b.status === 'requested');
-  const acceptedBookings = bookings.filter((b) => b.status === 'accepted');
+  const pendingBookings = bookings.filter((b) => b.status === "requested");
+  const acceptedBookings = bookings.filter((b) => b.status === "accepted");
 
   const handleAcceptBooking = async (id: string) => {
-    await updateBookingStatus(id, 'accepted');
+    await updateBookingStatus(id, "accepted");
   };
 
   const handleDeclineBooking = async (id: string) => {
-    await updateBookingStatus(id, 'declined');
+    await updateBookingStatus(id, "declined");
   };
 
   const handleRegisterDelegatedGuest = async () => {
@@ -46,42 +60,45 @@ export const CentreDashboardView: React.FC = () => {
       delegatedGuestName,
       delegatedGuestPhone,
       delegatedCategory,
-      'centre_import'
+      "centre_import",
     );
     if (newGuest) {
-      setDelegatedSuccessMsg(`Delegated VIP Guest registered: ${newGuest.name} (Pass: ${newGuest.code})`);
-      setDelegatedGuestName('');
-      setDelegatedGuestPhone('');
-      setTimeout(() => setDelegatedSuccessMsg(''), 3000);
+      setDelegatedSuccessMsg(
+        `Delegated VIP Guest registered: ${newGuest.name} (Pass: ${newGuest.code})`,
+      );
+      setDelegatedGuestName("");
+      setDelegatedGuestPhone("");
+      setTimeout(() => setDelegatedSuccessMsg(""), 3000);
     }
   };
 
   const handleDelegatedBulkImport = async () => {
     if (!delegatedBulkText.trim()) return;
-    const added = await bulkImportGuests(delegatedBulkText, 'centre_import');
-    setDelegatedBulkText('');
-    setBulkImportStatus(`Delegated venue import added ${added} guest${added !== 1 ? 's' : ''}.`);
-    setTimeout(() => setBulkImportStatus(''), 3000);
+    const added = await bulkImportGuests(delegatedBulkText, "centre_import");
+    setDelegatedBulkText("");
+    setBulkImportStatus(
+      `Delegated venue import added ${added} guest${added !== 1 ? "s" : ""}.`,
+    );
+    setTimeout(() => setBulkImportStatus(""), 3000);
   };
 
   const handleAssignUsher = () => {
     if (!usherName.trim()) return;
     const newUsh = {
-      id: 'ush_' + Math.random().toString(36).substring(2, 7),
+      id: "ush_" + Math.random().toString(36).substring(2, 7),
       name: usherName.trim(),
       hall: selectedHall,
       lane: `Lane #${assignedUshers.length + 1}`,
     };
     setAssignedUshers((prev) => [...prev, newUsh]);
     setUsherAssignMsg(`Usher ${newUsh.name} assigned to ${newUsh.hall}!`);
-    setUsherName('');
-    setTimeout(() => setUsherAssignMsg(''), 2500);
+    setUsherName("");
+    setTimeout(() => setUsherAssignMsg(""), 2500);
   };
 
   return (
     <section className="view active" id="view-centre-dashboard">
       <div className="space-y-6">
-        
         {/* PORTAL TITLE & METRICS */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#262D38] pb-4">
           <div>
@@ -93,18 +110,27 @@ export const CentreDashboardView: React.FC = () => {
               Venue Manager Operations &amp; Delegations
             </h2>
             <p className="text-xs font-mono text-[#8B93A3]">
-              Review organizer venue bookings, assign hall ushers, and manage delegated gate access.
+              Review organizer venue bookings, assign hall ushers, and manage
+              delegated gate access.
             </p>
           </div>
 
           <div className="flex gap-4">
             <div className="p-3 rounded-xl bg-[#151A22] border border-[#262D38] text-center font-mono">
-              <div className="text-xs text-[#8B93A3] uppercase">Pending Requests</div>
-              <div className="text-xl font-bold text-[#F0A93B] font-['Space_Grotesk']">{pendingBookings.length}</div>
+              <div className="text-xs text-[#8B93A3] uppercase">
+                Pending Requests
+              </div>
+              <div className="text-xl font-bold text-[#F0A93B] font-['Space_Grotesk']">
+                {pendingBookings.length}
+              </div>
             </div>
             <div className="p-3 rounded-xl bg-[#151A22] border border-[#262D38] text-center font-mono">
-              <div className="text-xs text-[#8B93A3] uppercase">Active Delegations</div>
-              <div className="text-xl font-bold text-[#3ED98A] font-['Space_Grotesk']">{delegations.length}</div>
+              <div className="text-xs text-[#8B93A3] uppercase">
+                Active Delegations
+              </div>
+              <div className="text-xl font-bold text-[#3ED98A] font-['Space_Grotesk']">
+                {delegations.length}
+              </div>
             </div>
           </div>
         </div>
@@ -114,7 +140,8 @@ export const CentreDashboardView: React.FC = () => {
           <div className="panel-head">
             <h3>Incoming Venue Booking Requests</h3>
             <span className="text-xs font-mono text-[#8B93A3]">
-              {pendingBookings.length} request{pendingBookings.length !== 1 ? 's' : ''} awaiting action
+              {pendingBookings.length} request
+              {pendingBookings.length !== 1 ? "s" : ""} awaiting action
             </span>
           </div>
 
@@ -130,10 +157,16 @@ export const CentreDashboardView: React.FC = () => {
                       {b.eventName}
                     </div>
                     <div className="text-xs font-mono text-[#94a3b8]">
-                      Host: <strong className="text-white">{b.organizerName}</strong> • Date: <strong className="text-[#3ED98A]">{b.requestedDate}</strong>
+                      Host:{" "}
+                      <strong className="text-white">{b.organizerName}</strong>{" "}
+                      • Date:{" "}
+                      <strong className="text-[#3ED98A]">
+                        {b.requestedDate}
+                      </strong>
                     </div>
                     <div className="text-xs font-mono text-[#8B93A3]">
-                      Est. Guests: {b.guestEstimate} • Notes: "{b.message || 'No special requests'}"
+                      Est. Guests: {b.guestEstimate} • Notes: "
+                      {b.message || "No special requests"}"
                     </div>
                   </div>
 
@@ -163,11 +196,12 @@ export const CentreDashboardView: React.FC = () => {
         <div className="panel space-y-4">
           <div className="panel-head">
             <h3>Multi-Hall Venue Spaces &amp; Gate Usher Matrix</h3>
-            <span className="text-xs font-mono text-[#3ED98A]">Hardware Gate Lanes</span>
+            <span className="text-xs font-mono text-[#3ED98A]">
+              Hardware Gate Lanes
+            </span>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            
             {/* Assign Usher Form */}
             <div className="space-y-3">
               <div className="field">
@@ -176,9 +210,13 @@ export const CentreDashboardView: React.FC = () => {
                   value={selectedHall}
                   onChange={(e) => setSelectedHall(e.target.value)}
                 >
-                  <option value="Grand Ballroom">Grand Ballroom (Capacity: 3,000)</option>
+                  <option value="Grand Ballroom">
+                    Grand Ballroom (Capacity: 3,000)
+                  </option>
                   <option value="Hall A">Hall A (Capacity: 1,200)</option>
-                  <option value="Executive VIP Suite">Executive VIP Suite (Capacity: 300)</option>
+                  <option value="Executive VIP Suite">
+                    Executive VIP Suite (Capacity: 300)
+                  </option>
                 </select>
               </div>
 
@@ -211,10 +249,17 @@ export const CentreDashboardView: React.FC = () => {
               <label>Assigned Hall Ushers &amp; Gate Lanes</label>
               <div className="space-y-2">
                 {assignedUshers.map((u) => (
-                  <div key={u.id} className="p-3 rounded-xl bg-[#080c14] border border-[#262D38] flex items-center justify-between text-xs font-mono">
+                  <div
+                    key={u.id}
+                    className="p-3 rounded-xl bg-[#080c14] border border-[#262D38] flex items-center justify-between text-xs font-mono"
+                  >
                     <div>
-                      <span className="font-bold text-white block">{u.name}</span>
-                      <span className="text-[#8B93A3]">{u.hall} • {u.lane}</span>
+                      <span className="font-bold text-white block">
+                        {u.name}
+                      </span>
+                      <span className="text-[#8B93A3]">
+                        {u.hall} • {u.lane}
+                      </span>
                     </div>
                     <span className="px-2 py-0.5 rounded bg-[#173226] text-[#3ED98A] font-bold">
                       SCANNER ACTIVE
@@ -223,7 +268,6 @@ export const CentreDashboardView: React.FC = () => {
                 ))}
               </div>
             </div>
-
           </div>
         </div>
 
@@ -237,7 +281,8 @@ export const CentreDashboardView: React.FC = () => {
           </div>
 
           <p className="text-xs text-[#8B93A3]">
-            Event Centre teams can register VIP guests or import gate lists directly on behalf of host organizers.
+            Event Centre teams can register VIP guests or import gate lists
+            directly on behalf of host organizers.
           </p>
 
           {delegatedSuccessMsg && (
@@ -272,7 +317,9 @@ export const CentreDashboardView: React.FC = () => {
               <label>Category</label>
               <select
                 value={delegatedCategory}
-                onChange={(e) => setDelegatedCategory(e.target.value as 'VIP' | 'Regular')}
+                onChange={(e) =>
+                  setDelegatedCategory(e.target.value as "VIP" | "Regular")
+                }
               >
                 <option value="VIP">VIP Guest</option>
                 <option value="Regular">Regular Guest</option>
@@ -291,7 +338,10 @@ export const CentreDashboardView: React.FC = () => {
           <div className="divider" />
 
           <div className="space-y-2">
-            <label>Delegated Bulk CSV Import (One guest per line: Name, Phone, VIP/Regular)</label>
+            <label>
+              Delegated Bulk CSV Import (One guest per line: Name, Phone,
+              VIP/Regular)
+            </label>
             <textarea
               rows={3}
               placeholder={`Alhaji Aliko Dangote, 08031112222, VIP\nDr. Ngozi Okonjo, 08099998888, VIP`}
@@ -302,7 +352,7 @@ export const CentreDashboardView: React.FC = () => {
               onClick={handleDelegatedBulkImport}
               className="btn btn-ghost font-mono text-xs"
             >
-              {bulkImportStatus || 'Import Delegated Venue List'}
+              {bulkImportStatus || "Import Delegated Venue List"}
             </button>
           </div>
         </div>
@@ -330,12 +380,24 @@ export const CentreDashboardView: React.FC = () => {
                     <td>
                       <b>{b.eventName}</b>
                       <br />
-                      <span className="text-[11px] text-[#8B93A3]">{b.organizerName}</span>
+                      <span className="text-[11px] text-[#8B93A3]">
+                        {b.organizerName}
+                      </span>
                     </td>
-                    <td><span className="font-mono text-xs text-[#3ED98A]">{b.requestedDate}</span></td>
-                    <td><span className="font-mono text-xs">{b.guestEstimate}</span></td>
                     <td>
-                      <span className="code-chip text-[10px] text-[#3ED98A]">register_guests, scan_guests</span>
+                      <span className="font-mono text-xs text-[#3ED98A]">
+                        {b.requestedDate}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="font-mono text-xs">
+                        {b.guestEstimate}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="code-chip text-[10px] text-[#3ED98A]">
+                        register_guests, scan_guests
+                      </span>
                     </td>
                     <td>
                       <span className="status-pill in">Approved</span>
@@ -348,7 +410,6 @@ export const CentreDashboardView: React.FC = () => {
             <div className="empty">No approved booking history yet.</div>
           )}
         </div>
-
       </div>
     </section>
   );
