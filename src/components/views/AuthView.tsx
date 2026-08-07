@@ -32,7 +32,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
   const [venueType, setVenueType] = useState('Event centre');
   const [venueCapacity, setVenueCapacity] = useState('5000');
 
-  const [acceptTerms, setAcceptTerms] = useState(true);
+  // Unchecked by default per user requirement
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{
     type: 'ok' | 'err';
     text: string;
@@ -59,6 +60,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
         });
       }
     } else {
+      // Validate Terms of Service Acceptance
+      if (!acceptTerms) {
+        setStatusMsg({
+          type: 'err',
+          text: 'You must agree to the Terms of Service and Privacy Policy to create an account.',
+        });
+        return;
+      }
+
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim() || organization || venueName || 'Gatehouse User';
       if (!email.trim() || !password.trim()) {
         setStatusMsg({
@@ -97,21 +107,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
       setTimeout(() => {
         setActiveTab(role === 'centre' ? 'centre-dash' : 'dashboard');
       }, 600);
-    }
-  };
-
-  const handleDemoLogin = async (targetRole: UserRole) => {
-    setStatusMsg(null);
-    const demoEmail = targetRole === 'organizer' ? 'demo@gatehouse.app' : 'venue@gatehouse.app';
-    const success = await loginUser(demoEmail, 'password123');
-    if (success) {
-      setStatusMsg({
-        type: 'ok',
-        text: `Logged in as Demo ${targetRole === 'organizer' ? 'Organizer' : 'Venue Manager'}.`,
-      });
-      setTimeout(() => {
-        setActiveTab(targetRole === 'centre' ? 'centre-dash' : 'dashboard');
-      }, 500);
     }
   };
 
@@ -331,7 +326,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
 
               {/* WORK EMAIL */}
               <div className="space-y-1">
-                <label className="text-xs font-mono text-muted-foreground font-bold">Work email *</label>
+                <label className="text-xs font-mono text-muted-foreground font-bold">Work email</label>
                 <input
                   type="email"
                   placeholder="you@company.com"
@@ -462,7 +457,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
 
               {/* PASSWORD WITH SHOW/HIDE TOGGLE */}
               <div className="space-y-1">
-                <label className="text-xs font-mono text-muted-foreground font-bold">Password *</label>
+                <label className="text-xs font-mono text-muted-foreground font-bold">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -483,52 +478,29 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
                 </div>
               </div>
 
-              {/* TERMS CHECKBOX */}
+              {/* TERMS CHECKBOX — UNCHECKED BY DEFAULT */}
               {authMode === 'register' && (
                 <label className="flex items-start gap-2 pt-1 text-[11px] text-muted-foreground cursor-pointer">
                   <input
                     type="checkbox"
                     checked={acceptTerms}
                     onChange={(e) => setAcceptTerms(e.target.checked)}
-                    className="mt-0.5 rounded border-border text-primary accent-primary"
+                    className="mt-0.5 rounded border-border text-primary accent-primary cursor-pointer"
                   />
                   <span>
-                    I agree to the <a href="#" className="text-primary hover:underline">Terms of Service</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>.
+                    I agree to the <a href="#" className="text-primary hover:underline font-bold">Terms of Service</a> and <a href="#" className="text-primary hover:underline font-bold">Privacy Policy</a>.
                   </span>
                 </label>
               )}
 
-              {/* SUBMIT BUTTON */}
+              {/* SUBMIT BUTTON WITH CLEAN CTA TEXT */}
               <button
                 type="submit"
                 className="w-full rounded-full bg-primary py-3.5 text-xs font-mono font-bold text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-lg transition-all pt-2"
               >
-                {authMode === 'login' ? 'Sign In to Gatehouse &rarr;' : 'Create Account &amp; Access Dashboard &rarr;'}
+                {authMode === 'login' ? 'Sign in' : 'Create account'}
               </button>
             </form>
-
-            {/* 1-CLICK QUICK DEMO LOGIN BUTTONS */}
-            <div className="pt-4 border-t border-border/40 space-y-2">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase block text-center font-bold">
-                Quick 1-Click Demo Sandbox Access
-              </span>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('organizer')}
-                  className="rounded-full border border-border/60 bg-card py-2 px-3 text-[11px] font-mono text-foreground hover:bg-secondary cursor-pointer transition-all"
-                >
-                  ⚡ Demo Organizer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('centre')}
-                  className="rounded-full border border-[#38ef7d]/40 bg-[#38ef7d]/10 py-2 px-3 text-[11px] font-mono text-[#38ef7d] hover:bg-[#38ef7d]/20 cursor-pointer transition-all font-bold"
-                >
-                  🏛️ Demo Venue Manager
-                </button>
-              </div>
-            </div>
 
           </div>
         </div>

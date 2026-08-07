@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useGatehouse } from '../../context/GatehouseContext';
-import type { ViewRoute } from '../../types';
+import type { ViewRoute, UserRole } from '../../types';
+import { ChevronDown, Play } from 'lucide-react';
 
 interface TopbarProps {
   currentView: ViewRoute;
@@ -8,10 +9,23 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
-  const { currentUser, logoutUser } = useGatehouse();
+  const { currentUser, loginUser, logoutUser } = useGatehouse();
+  const [isDemoDropdownOpen, setIsDemoDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Show public landing page navbar for landing page AND public venue directory
   const isPublicMarketingPage = ['landing', 'login', 'register', 'centres'].includes(currentView);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDemoDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const scrollToSection = (sectionId: string) => {
     if (currentView !== 'landing') {
@@ -26,9 +40,19 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
     }
   };
 
+  const handleDemoLogin = async (targetRole: UserRole) => {
+    setIsDemoDropdownOpen(false);
+    const demoEmail = targetRole === 'organizer' ? 'demo@gatehouse.app' : 'venue@gatehouse.app';
+    const success = await loginUser(demoEmail, 'password123');
+    if (success) {
+      onNavigate(targetRole === 'centre' ? 'centre-dash' : 'dashboard');
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
+        
         {/* BRAND LOGO WITH TRANSPARENT SVG */}
         <div
           onClick={() => onNavigate('landing')}
@@ -176,8 +200,44 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
           </nav>
         )}
 
-        {/* AUTH ACTIONS */}
+        {/* AUTH ACTIONS & VIEW DEMO DROPDOWN */}
         <div className="flex shrink-0 items-center gap-3">
+          
+          {/* VIEW DEMO DROPDOWN MENU */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsDemoDropdownOpen(!isDemoDropdownOpen)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#5cbdb9]/40 bg-[#5cbdb9]/10 px-4 py-2 text-xs font-mono font-bold text-[#5cbdb9] hover:bg-[#5cbdb9]/20 transition-all cursor-pointer shadow-sm"
+            >
+              <Play className="h-3 w-3 fill-current" />
+              View Demo
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isDemoDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isDemoDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-border/80 bg-navy-900 p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3 py-1.5 text-[10px] font-mono text-muted-foreground uppercase font-bold border-b border-border/40 mb-1">
+                  Select Sandbox Demo
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin('organizer')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-foreground hover:bg-card flex items-center justify-between cursor-pointer transition-colors"
+                >
+                  <span>⚡ Event Organizer</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin('centre')}
+                  className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-[#38ef7d] hover:bg-card flex items-center justify-between cursor-pointer transition-colors"
+                >
+                  <span>🏛️ Venue Owner</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           {currentUser ? (
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col text-right">
