@@ -198,16 +198,51 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
 
-  const [guests, setGuests] = useState<Guest[]>(INITIAL_GUESTS);
-  const [events, setEvents] = useState<EventItem[]>([DEFAULT_EVENT]);
-  const [activeEvent, setActiveEvent] = useState<EventItem>(DEFAULT_EVENT);
+  const [guests, setGuests] = useState<Guest[]>(() => {
+    const saved = localStorage.getItem('gatehouse_guests');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return INITIAL_GUESTS;
+  });
+
+  const [events, setEvents] = useState<EventItem[]>(() => {
+    const saved = localStorage.getItem('gatehouse_events');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return [DEFAULT_EVENT];
+  });
+
+  const [activeEvent, setActiveEvent] = useState<EventItem>(() => events[0] || DEFAULT_EVENT);
   const [eventCentres] = useState<EventCentre[]>(INITIAL_CENTRES);
   const [selectedCentre, setSelectedCentre] = useState<EventCentre | null>(INITIAL_CENTRES[0]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
+
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    const saved = localStorage.getItem('gatehouse_bookings');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return [];
+  });
+
   const [delegations] = useState<Delegation[]>([]);
   const [checkinLogs] = useState<CheckinLog[]>([]);
   const [checkinTimeline, setCheckinTimeline] = useState<Date[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Synchronize state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('gatehouse_guests', JSON.stringify(guests));
+  }, [guests]);
+
+  useEffect(() => {
+    localStorage.setItem('gatehouse_events', JSON.stringify(events));
+  }, [events]);
+
+  useEffect(() => {
+    localStorage.setItem('gatehouse_bookings', JSON.stringify(bookings));
+  }, [bookings]);
 
   const changeTab = useCallback((newTab: ViewTab, pushHistory = true) => {
     if (
