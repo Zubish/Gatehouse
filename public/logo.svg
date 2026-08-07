@@ -1,12 +1,78 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <!-- Outer Shield Boundary with Top Castle Crenellations -->
-  <path d="M 20 28 L 35 28 L 35 22 L 45 22 L 45 28 L 55 28 L 55 22 L 65 22 L 65 28 L 80 28 L 80 52 C 80 72 50 88 50 88 C 50 88 20 72 20 52 Z" 
-        stroke="#5cbdb9" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-  <!-- Inner Stylized "G" Gate Emblem -->
-  <path d="M 68 50 C 68 38 58 36 50 36 C 40 36 34 42 34 52 C 34 62 42 70 50 70 C 60 70 68 62 68 54 L 52 54" 
-        stroke="#e8edf3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-  <!-- Gate Vertical Bars Motif inside G -->
-  <line x1="42" y1="44" x2="42" y2="52" stroke="#3b6fa0" stroke-width="2.5" stroke-linecap="round" />
-  <line x1="46" y1="42" x2="46" y2="52" stroke="#3b6fa0" stroke-width="2.5" stroke-linecap="round" />
-  <line x1="50" y1="40" x2="50" y2="52" stroke="#3b6fa0" stroke-width="2.5" stroke-linecap="round" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Vibrant Blue Gradient for G Accent -->
+    <linearGradient id="gateBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1b7bfb" />
+      <stop offset="100%" stop-color="#0052cc" />
+    </linearGradient>
+
+    <!-- Cyan Glow Gradient for Gate Bars -->
+    <linearGradient id="gateBarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38ef7d" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#1b7bfb" stop-opacity="0.6" />
+    </linearGradient>
+
+    <!-- Subtle White Shading for Left Shield -->
+    <linearGradient id="whiteShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+  </defs>
+
+  <!-- SHIELD EMBLEM GROUP WITH CASTLE CRENELLATIONS -->
+  <g id="gatehouse-shield">
+    
+    <!-- LEFT WHITE SHIELD HALF -->
+    <path 
+      d="M 170 130 
+         L 210 130 L 210 145 L 250 145 L 250 130 
+         L 250 360 L 250 360 L 170 290 
+         Z" 
+      fill="url(#whiteShieldGrad)" 
+    />
+
+    <!-- FULL OUTER CASTLE SHIELD SILHOUETTE -->
+    <!-- Top crenellations: (170,130) -> (210,130) -> (210,145) -> (250,145) -> (250,130) -> (290,130) -> (290,145) -> (330,145) -> (330,130) -> (330,240) -> shield curve to (250,360) -> curve to (170,240) -> Z -->
+    <path 
+      d="M 170 130 
+         H 210 V 145 H 290 V 130 H 330 V 240
+         C 330 300, 290 340, 250 360
+         C 210 340, 170 300, 170 240 
+         Z" 
+      fill="url(#whiteShieldGrad)"
+    />
+
+    <!-- INNER ARCHWAY CUTOUT (DARK HOLLOW ARCH) -->
+    <path 
+      d="M 195 240 
+         C 195 200, 305 200, 305 240
+         V 290 
+         C 305 315, 280 330, 250 340
+         C 220 330, 195 315, 195 290 
+         Z" 
+      fill="#0b172a"
+    />
+
+    <!-- VERTICAL GATE BARS INSIDE ARCHWAY -->
+    <g id="gate-bars">
+      <rect x="215" y="210" width="8" height="45" rx="4" fill="url(#gateBlueGrad)" opacity="0.85" />
+      <rect x="231" y="202" width="8" height="53" rx="4" fill="url(#gateBlueGrad)" opacity="0.95" />
+      <rect x="247" y="198" width="8" height="57" rx="4" fill="url(#gateBlueGrad)" />
+      <rect x="263" y="202" width="8" height="53" rx="4" fill="url(#gateBlueGrad)" opacity="0.95" />
+      <rect x="279" y="210" width="8" height="45" rx="4" fill="url(#gateBlueGrad)" opacity="0.85" />
+    </g>
+
+    <!-- BLUE 'G' LETTER MARK SWEEP ON RIGHT & BOTTOM -->
+    <path 
+      d="M 250 360 
+         C 290 340, 330 300, 330 240
+         H 255
+         V 262
+         H 305
+         C 305 290, 280 320, 250 335
+         Z" 
+      fill="url(#gateBlueGrad)" 
+    />
+
+  </g>
 </svg>
