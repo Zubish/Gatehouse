@@ -159,16 +159,36 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
 
   const handleSelectGoogleAccount = async (acctName: string, acctEmail: string, acctRole: 'organizer' | 'centre') => {
     setShowGoogleChooser(false);
-    const success = await registerUser(acctName, acctEmail, 'google_sso_pass', acctRole);
-    if (success) {
-      setStatusMsg({
-        type: 'ok',
-        text: `Signed in as ${acctName} (${acctEmail}) via Google SSO! Redirecting…`,
+    
+    // 1. Try logging in first if user already exists
+    let success = await loginUser(acctEmail, 'google_sso_pass');
+    
+    // 2. If user does not exist yet, register new Google user account
+    if (!success) {
+      success = await registerUser(acctName, acctEmail, 'google_sso_pass', acctRole, {
+        phone: '+234 800 000 0000',
+        organization: acctRole === 'centre' ? 'Venue Facility' : 'Event Host',
+        country: 'Nigeria',
       });
-      setTimeout(() => {
-        setActiveTab(acctRole === 'centre' ? 'centre-dash' : 'dashboard');
-      }, 600);
     }
+
+    let targetRole = acctRole;
+    if (
+      acctEmail.toLowerCase().includes('ekohotels') ||
+      acctEmail.toLowerCase().includes('venue') ||
+      acctEmail.toLowerCase() === 'security@ekohotels.com'
+    ) {
+      targetRole = 'centre';
+    }
+
+    setStatusMsg({
+      type: 'ok',
+      text: `Signed in as ${acctName} (${acctEmail}) via Google SSO! Redirecting…`,
+    });
+
+    setTimeout(() => {
+      setActiveTab(targetRole === 'centre' ? 'centre-dash' : 'dashboard');
+    }, 400);
   };
 
   return (
