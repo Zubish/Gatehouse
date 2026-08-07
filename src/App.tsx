@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGatehouse } from './context/GatehouseContext';
 import { Topbar } from './components/layout/Topbar';
+import { Sidebar } from './components/layout/Sidebar';
 import { LandingPageView } from './components/views/LandingPageView';
 import { AuthView } from './components/views/AuthView';
 import { DashboardView } from './components/views/DashboardView';
@@ -33,69 +34,83 @@ export function App() {
 
   const currentView = activeTab;
 
+  // Pages where footer is explicitly allowed: ONLY landing, login, register, privacy-policy, terms-of-service, security-sla
+  const isFooterAllowedPage = [
+    'landing',
+    'login',
+    'register',
+    'privacy-policy',
+    'terms-of-service',
+    'security-sla',
+  ].includes(currentView);
+
+  // Pages that use the full-width layout without sidebar
+  const isPublicFullWidthPage = [
+    'landing',
+    'login',
+    'register',
+    'privacy-policy',
+    'terms-of-service',
+    'security-sla',
+  ].includes(currentView);
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       {/* TOPBAR NAVIGATION */}
       <Topbar currentView={currentView} onNavigate={handleNavigate} />
 
-      {/* MAIN VIEW ROUTER */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        {currentView === 'landing' && (
-          <LandingPageView onNavigate={handleNavigate} />
+      {/* APP BODY LAYOUT */}
+      <div className="flex-1 flex w-full">
+        
+        {/* LEFT SIDEBAR NAVIGATION (For Control Room App Views Only) */}
+        {!isPublicFullWidthPage && (
+          <Sidebar currentView={currentView} onNavigate={handleNavigate} />
         )}
-        {(currentView === 'login' || currentView === 'register') && (
-          <AuthView mode={authMode} />
-        )}
-        {currentView === 'dashboard' && <DashboardView />}
-        {currentView === 'guests' && <GuestListView />}
-        {currentView === 'checkin' && <CheckinView />}
-        {currentView === 'walkin' && <WalkinView />}
-        {currentView === 'centres' && <EventCentresView onNavigate={handleNavigate} />}
-        {currentView === 'centre-dash' && <CentreDashboardView />}
-        {currentView === 'public-reg' && <PublicRegistrationView />}
-        {currentView === 'settings' && <SettingsView />}
-        {currentView === 'admin' && <AdminPortalView />}
 
-        {/* DEDICATED NIGERIAN LAW LEGAL PAGES */}
-        {currentView === 'privacy-policy' && (
-          <PrivacyPolicyView onNavigate={handleNavigate} />
-        )}
-        {currentView === 'terms-of-service' && (
-          <TermsOfServiceView onNavigate={handleNavigate} />
-        )}
-        {currentView === 'security-sla' && (
-          <SecuritySlaView onNavigate={handleNavigate} />
-        )}
-      </main>
-
-      {/* FOOTER rendering rules for auth pages and control room views */}
-      {!['landing', 'centres', 'privacy-policy', 'terms-of-service', 'security-sla'].includes(currentView) && (
-        <footer className="border-t border-border/40 py-6 text-center text-xs font-mono text-muted-foreground space-y-2">
-          {['login', 'register'].includes(currentView) ? (
-            /* MINIMAL 1-LINE LEGAL BAR FOR AUTH PAGES */
-            <div className="text-muted-foreground">
-              &copy; {new Date().getFullYear()} Gatehouse Inc. All rights reserved. &bull;{' '}
-              <button onClick={() => handleNavigate('terms-of-service')} className="hover:underline hover:text-foreground cursor-pointer">Terms of Service</button> &bull;{' '}
-              <button onClick={() => handleNavigate('privacy-policy')} className="hover:underline hover:text-foreground cursor-pointer">Privacy Policy</button>
-            </div>
-          ) : (
-            /* CLEAN ENTERPRISE STATUS BAR FOR CONTROL ROOM VIEWS */
-            <div className="space-y-1">
-              <div className="flex justify-center items-center gap-3 flex-wrap font-bold text-foreground">
-                <span>Gatehouse Enterprise OS</span>
-                <span>&bull;</span>
-                <span>Secure Access &amp; Venue Operations</span>
-                <span>&bull;</span>
-                <span className="text-[#38ef7d] flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#38ef7d] animate-pulse" />
-                  All Systems Operational
-                </span>
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                &copy; {new Date().getFullYear()} Gatehouse Inc. Built for event security &amp; venue control.
-              </div>
-            </div>
+        {/* MAIN VIEW CONTENT CONTAINER */}
+        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+          {currentView === 'landing' && (
+            <LandingPageView onNavigate={handleNavigate} />
           )}
+          {(currentView === 'login' || currentView === 'register') && (
+            <AuthView mode={authMode} />
+          )}
+          {currentView === 'dashboard' && <DashboardView />}
+          {currentView === 'guests' && <GuestListView />}
+          {currentView === 'checkin' && <CheckinView />}
+          {currentView === 'walkin' && <WalkinView />}
+          {currentView === 'centres' && <EventCentresView onNavigate={handleNavigate} />}
+          {currentView === 'centre-dash' && <CentreDashboardView />}
+          {currentView === 'public-reg' && <PublicRegistrationView />}
+          {currentView === 'settings' && <SettingsView />}
+          {currentView === 'admin' && <AdminPortalView />}
+
+          {/* DEDICATED NIGERIAN LAW LEGAL PAGES */}
+          {currentView === 'privacy-policy' && (
+            <PrivacyPolicyView onNavigate={handleNavigate} />
+          )}
+          {currentView === 'terms-of-service' && (
+            <TermsOfServiceView onNavigate={handleNavigate} />
+          )}
+          {currentView === 'security-sla' && (
+            <SecuritySlaView onNavigate={handleNavigate} />
+          )}
+        </main>
+      </div>
+
+      {/* FOOTER - REMOVED FROM ALL CONTROL ROOM VIEWS, ALLOWED ONLY ON LANDING AND AUTH/LEGAL PAGES */}
+      {isFooterAllowedPage && !['landing', 'privacy-policy', 'terms-of-service', 'security-sla'].includes(currentView) && (
+        <footer className="border-t border-border/40 py-6 text-center text-xs font-mono text-muted-foreground">
+          <div className="text-muted-foreground">
+            &copy; {new Date().getFullYear()} Gatehouse Inc. All rights reserved. &bull;{' '}
+            <button onClick={() => handleNavigate('terms-of-service')} className="hover:underline hover:text-foreground cursor-pointer">
+              Terms of Service
+            </button>{' '}
+            &bull;{' '}
+            <button onClick={() => handleNavigate('privacy-policy')} className="hover:underline hover:text-foreground cursor-pointer">
+              Privacy Policy
+            </button>
+          </div>
         </footer>
       )}
     </div>
