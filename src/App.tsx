@@ -12,6 +12,9 @@ import { CentreDashboardView } from './components/views/CentreDashboardView';
 import { PublicRegistrationView } from './components/views/PublicRegistrationView';
 import { SettingsView } from './components/views/SettingsView';
 import { AdminPortalView } from './components/views/AdminPortalView';
+import { PrivacyPolicyView } from './components/views/PrivacyPolicyView';
+import { TermsOfServiceView } from './components/views/TermsOfServiceView';
+import { SecuritySlaView } from './components/views/SecuritySlaView';
 import type { ViewRoute } from './types';
 
 export function App() {
@@ -52,17 +55,28 @@ export function App() {
         {currentView === 'public-reg' && <PublicRegistrationView />}
         {currentView === 'settings' && <SettingsView />}
         {currentView === 'admin' && <AdminPortalView />}
+
+        {/* DEDICATED NIGERIAN LAW LEGAL PAGES */}
+        {currentView === 'privacy-policy' && (
+          <PrivacyPolicyView onNavigate={handleNavigate} />
+        )}
+        {currentView === 'terms-of-service' && (
+          <TermsOfServiceView onNavigate={handleNavigate} />
+        )}
+        {currentView === 'security-sla' && (
+          <SecuritySlaView onNavigate={handleNavigate} />
+        )}
       </main>
 
       {/* FOOTER rendering rules for auth pages and control room views */}
-      {!['landing', 'centres'].includes(currentView) && (
+      {!['landing', 'centres', 'privacy-policy', 'terms-of-service', 'security-sla'].includes(currentView) && (
         <footer className="border-t border-border/40 py-6 text-center text-xs font-mono text-muted-foreground space-y-2">
           {['login', 'register'].includes(currentView) ? (
             /* MINIMAL 1-LINE LEGAL BAR FOR AUTH PAGES */
             <div className="text-muted-foreground">
               &copy; {new Date().getFullYear()} Gatehouse Inc. All rights reserved. &bull;{' '}
-              <a href="#" className="hover:underline hover:text-foreground">Terms of Service</a> &bull;{' '}
-              <a href="#" className="hover:underline hover:text-foreground">Privacy Policy</a>
+              <button onClick={() => handleNavigate('terms-of-service')} className="hover:underline hover:text-foreground cursor-pointer">Terms of Service</button> &bull;{' '}
+              <button onClick={() => handleNavigate('privacy-policy')} className="hover:underline hover:text-foreground cursor-pointer">Privacy Policy</button>
             </div>
           ) : (
             /* CLEAN ENTERPRISE STATUS BAR FOR CONTROL ROOM VIEWS */

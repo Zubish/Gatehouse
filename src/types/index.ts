@@ -112,6 +112,9 @@ export type ViewRoute =
   | "centre-dash"
   | "public-reg"
   | "settings"
-  | "admin";
+  | "admin"
+  | "privacy-policy"
+  | "terms-of-service"
+  | "security-sla";
 
 export type ViewTab = ViewRoute;

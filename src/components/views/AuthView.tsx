@@ -444,12 +444,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
                       onChange={(e) => setCountry(e.target.value)}
                       className="w-full rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
                     >
-                      <option>Nigeria</option>
-                      <option>Ghana</option>
-                      <option>Kenya</option>
-                      <option>South Africa</option>
-                      <option>United Kingdom</option>
-                      <option>United States</option>
+                      <option value="Nigeria">Nigeria</option>
                     </select>
                   </div>
                 </div>
