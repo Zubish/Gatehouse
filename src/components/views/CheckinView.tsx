@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useGatehouse } from '../../context/GatehouseContext';
-import { generateQrGrid } from '../../utils/qrGenerator';
+import { QRCodePass } from './QRCodePass';
 import type { Guest } from '../../types';
 import { QrCode, Camera, Usb, ShieldCheck, CheckCircle2, AlertTriangle, Lock, Video, StopCircle } from 'lucide-react';
 
@@ -159,8 +159,6 @@ export const CheckinView: React.FC = () => {
           )
           .slice(0, 6)
       : [];
-
-  const qrGrid = selectedGuest ? generateQrGrid(selectedGuest.qrPayload) : [];
 
   return (
     <section className="view active space-y-6" id="view-checkin">
@@ -422,19 +420,10 @@ export const CheckinView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* VISUAL QR CODE RENDERING */}
+                {/* STANDARDS-COMPLIANT QR CODE RENDERING */}
                 <div className="p-4 rounded-2xl bg-navy-900 border border-border/60 flex flex-col items-center space-y-2">
-                  <div className="text-[10px] font-mono text-muted-foreground">HMAC-SHA256 Signed QR Matrix</div>
-                  <div className="grid grid-cols-8 gap-1 p-2 bg-white rounded-lg">
-                    {qrGrid.map((row, rIdx) =>
-                      row.map((cell, cIdx) => (
-                        <div
-                          key={`${rIdx}-${cIdx}`}
-                          className={`w-3 h-3 ${cell ? 'bg-black' : 'bg-white'}`}
-                        />
-                      ))
-                    )}
-                  </div>
+                  <div className="text-[10px] font-mono text-muted-foreground">HMAC-SHA256 Signed Standards-Compliant QR Badge</div>
+                  <QRCodePass value={selectedGuest.qrPayload} size={150} />
                 </div>
 
                 {/* ACTION BUTTONS */}

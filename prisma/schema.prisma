@@ -8,16 +8,19 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  name         String
-  email        String        @unique
-  phone        String
-  password     String?       // Hashed password with bcrypt
-  role         String        // 'organizer' | 'centre' | 'staff' | 'guest'
-  createdAt    DateTime      @default(now())
-  eventCentres EventCentre[]
-  events       Event[]
-  bookings     Booking[]
+  id            String        @id @default(cuid())
+  name          String
+  email         String        @unique
+  phone         String
+  password      String?       // Hashed password with bcrypt
+  role          String        // 'organizer' | 'centre' | 'staff' | 'guest' | 'admin'
+  organization  String?
+  organizerType String?
+  country       String?       @default("Nigeria")
+  createdAt     DateTime      @default(now())
+  eventCentres  EventCentre[]
+  events        Event[]
+  bookings      Booking[]
 }
 
 model EventCentre {
@@ -28,9 +31,10 @@ model EventCentre {
   description String
   address     String
   city        String
-  capacityMin Int
-  capacityMax Int
-  priceRange  String
+  capacity    Int          @default(2000)
+  capacityMin Int          @default(200)
+  capacityMax Int          @default(2000)
+  priceRange  String       @default("₦1,500,000 / day")
   photos      String[]
   amenities   String[]
   status      String       @default("approved") // 'pending' | 'approved' | 'suspended'
@@ -72,7 +76,7 @@ model Booking {
   requestedDate String
   guestEstimate Int
   status        String       @default("requested") // 'requested' | 'accepted' | 'declined' | 'cancelled'
-  message       String
+  message       String       @default("")
   createdAt     DateTime     @default(now())
 }
 

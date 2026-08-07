@@ -3002,3 +3002,87 @@ I deliberately didn't ask for too much during initial registration. Things like 
 That gives Gatehouse a much lower-friction signup experience while still knowing enough to create the correct workspace.
 
 And importantly, Google signup should not bypass the role-selection logic—after Google authentication, Gatehouse should still ask whether the new account is an Organizer or Venue Owner, then collect the role-specific information.
+
+
+Part 4
+junior developer mistake (correction)
+
+I’ve completed a thorough code review of the GateHouse codebase.
+
+Key finding
+
+The app has a strong UI/product prototype foundation, but I would not consider the current implementation production-ready, particularly because GateHouse is an access-control system.
+
+The most serious issues are:
+
+The QR system is not actually HMAC-SHA256. It uses a custom integer hash.
+The QR signing secret is hard-coded and exposed in frontend code.
+Passwords can be stored in localStorage in plaintext.
+Backend authorization is largely missing even though JWT authentication exists.
+Frontend and backend have two competing sources of truth — localStorage and PostgreSQL.
+GatehouseContext.tsx is doing far too much and has become the application's central monolith.
+api/index.ts and server/index.ts duplicate the backend.
+The frontend points to localhost:5000, while the Express server defaults to 3001.
+The /auth/me response has a frontend/backend shape mismatch.
+The registration UI collects considerably more information than the backend actually receives.
+Google SSO is currently a simulated/fallback flow rather than production OAuth.
+Check-in needs an atomic database transaction to prevent simultaneous scanners from admitting the same guest.
+The advertised "offline resilience" is currently mostly localStorage fallback, not a secure offline access-control architecture.
+
+I also attempted a dependency installation/build verification, but the environment's npm registry returned a 404 while fetching yn@3.1.1, so I couldn't honestly claim a successful clean build.
+
+Full review
+
+Download the complete GateHouse Code Review (.txt)
+
+The review includes the specific files to change, security findings, architectural recommendations, database issues, QR redesign, authentication redesign, offline architecture, prioritized implementation phases, and production acceptance criteria.
+
+code snippet
+
+I’ve completed a thorough code review of the GateHouse codebase.
+
+Key finding
+
+The app has a strong UI/product prototype foundation, but I would not consider the current implementation production-ready, particularly because GateHouse is an access-control system.
+
+The most serious issues are:
+
+The QR system is not actually HMAC-SHA256. It uses a custom integer hash.
+The QR signing secret is hard-coded and exposed in frontend code.
+Passwords can be stored in localStorage in plaintext.
+Backend authorization is largely missing even though JWT authentication exists.
+Frontend and backend have two competing sources of truth — localStorage and PostgreSQL.
+GatehouseContext.tsx is doing far too much and has become the application's central monolith.
+api/index.ts and server/index.ts duplicate the backend.
+The frontend points to localhost:5000, while the Express server defaults to 3001.
+The /auth/me response has a frontend/backend shape mismatch.
+The registration UI collects considerably more information than the backend actually receives.
+Google SSO is currently a simulated/fallback flow rather than production OAuth.
+Check-in needs an atomic database transaction to prevent simultaneous scanners from admitting the same guest.
+The advertised "offline resilience" is currently mostly localStorage fallback, not a secure offline access-control architecture.
+
+I also attempted a dependency installation/build verification, but the environment's npm registry returned a 404 while fetching yn@3.1.1, so I couldn't honestly claim a successful clean build.
+
+Full review
+
+Download the complete GateHouse Code Review (.txt)
+
+The review includes the specific files to change, security findings, architectural recommendations, database issues, QR redesign, authentication redesign, offline architecture, prioritized implementation phases, and production acceptance criteria.
+
+That should be built as a proper scanner/device subsystem, not faked with localStorage.
+
+My senior-developer verdict
+
+The junior developer built a good-looking prototype.
+
+They did not build a commercially defensible access-control backend.
+
+The patched version changes that foundation.
+
+The most important principle going forward should be:
+
+GateHouse must never claim a security, performance, offline, AI, hardware, or SLA capability that the underlying system cannot actually demonstrate.
+
+That is how I would protect the investors' money and the GateHouse brand.
+
+The next engineering step should be taking this patched codebase through database migration → dependency installation → build → automated security tests → deployment → real-device check-in testing, rather than adding more UI features on top of the old foundation.

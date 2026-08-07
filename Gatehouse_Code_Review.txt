@@ -1,0 +1,1078 @@
+GATEHOUSE WEB APP — CODEBASE REVIEW
+Reviewed: 2026-08-07
+Scope: Gatehouse-main(1).zip
+Primary stack: React 19 + TypeScript + Vite + Tailwind CSS 4 + Express + Prisma + PostgreSQL
+
+EXECUTIVE VERDICT
+-----------------
+The codebase has a strong prototype/UI foundation and a reasonably clear product structure, but it is NOT production-ready as an access-control platform yet.
+
+The biggest issue is that the application currently has two competing implementations:
+1. A client-side/localStorage implementation in GatehouseContext.
+2. A Prisma/Express backend in api/index.ts and server/index.ts.
+
+The UI can therefore appear functional even when the real backend is unavailable. This masks integration failures and creates two different sources of truth.
+
+Priority assessment:
+- P0 / Critical: authentication/security model
+- P0 / Critical: QR "HMAC" implementation is not actually HMAC-SHA256
+- P0 / Critical: secrets are hard-coded and exposed to the browser
+- P0 / Critical: backend authorization is missing from most protected endpoints
+- P0 / Critical: localStorage fallback stores passwords in plaintext
+- P1 / High: frontend points to localhost:5000 while server defaults to 3001
+- P1 / High: auth/me response shape is handled incorrectly
+- P1 / High: API and local state are not synchronized
+- P1 / High: duplicate backend files create maintenance/deployment drift
+- P1 / High: registration fields shown in UI are not sent to the backend
+- P1 / High: Google SSO is effectively a mock/fallback, not a secure production OAuth flow
+- P1 / High: missing rate limiting, request validation and abuse controls
+- P1 / High: check-in operations are not transaction-safe under concurrent scans
+- P2 / Medium: domain types use unconstrained strings instead of enums
+- P2 / Medium: dates/times are stored as strings
+- P2 / Medium: CSV parsing/export is fragile
+- P2 / Medium: frontend context is becoming a monolithic state/service layer
+- P2 / Medium: product/security claims in UI do not match implementation
+
+1. ARCHITECTURE REVIEW
+----------------------
+
+CURRENT STRUCTURE
+src/
+  components/
+  context/GatehouseContext.tsx
+  services/apiService.ts
+  types/
+  utils/
+api/index.ts
+server/index.ts
+prisma/schema.prisma
+prisma/seed.ts
+
+The project is visually organized, but application architecture is currently split.
+
+A. GatehouseContext is doing too much
+GatehouseContext.tsx contains:
+- authentication
+- routing/navigation
+- local persistence
+- guest management
+- check-in
+- event creation
+- venue selection
+- booking management
+- CSV export
+- demo accounts
+- API communication
+
+This makes the context difficult to test and increases the chance that UI state and backend state diverge.
+
+RECOMMENDATION:
+Split into:
+- AuthProvider
+- EventProvider or event hooks
+- Guest/check-in service
+- Booking service
+- API client
+- router
+- persistence/offline queue
+
+B. Duplicate backend implementations
+api/index.ts and server/index.ts contain essentially the same Express/Prisma API.
+
+This creates a serious drift risk:
+- a fix applied to one may not be applied to the other
+- security patches can be missed
+- local and production behavior can differ
+- route behavior can diverge
+
+RECOMMENDATION:
+Create one backend application module and expose it differently for:
+- local Express server
+- Vercel/serverless entry point
+
+For example:
+server/app.ts       -> Express app/routes/middleware
+server/index.ts     -> app.listen()
+api/index.ts        -> export app
+
+C. apiService.ts is disconnected from the main data flow
+ApiService exists but GatehouseContext directly uses fetch() for authentication and most operations.
+
+Additionally:
+- ApiService.syncCheckin() calls /api/checkin
+- no /api/checkin route exists
+- it returns true on network failure, which can falsely report a successful synchronization
+
+RECOMMENDATION:
+Use one API client throughout the application. Never have "network failure = success" unless the request is explicitly placed into a durable offline queue and marked pending.
+
+2. AUTHENTICATION & AUTHORIZATION
+---------------------------------
+
+CRITICAL: localStorage authentication fallback
+
+GatehouseContext stores registered accounts in:
+localStorage.getItem('gatehouse_registered_users')
+
+The stored object includes:
+password
+
+That means browser JavaScript, extensions, XSS payloads and anyone with access to the browser profile can read user passwords.
+
+This must be removed from production code.
+
+RECOMMENDATION:
+- Never store plaintext passwords.
+- Browser should never receive password hashes.
+- Use backend authentication only.
+- Prefer secure, HttpOnly, Secure, SameSite cookies for session/refresh tokens.
+- If bearer tokens must be used, use short-lived access tokens and carefully designed refresh-token storage.
+
+CRITICAL: fake/local tokens
+
+The local fallback uses:
+newUser.id
+as the authentication token.
+
+It also accepts demo users based on email patterns such as:
+email.includes('organizer')
+email.includes('venue')
+
+This is not authentication. It is a prototype bypass.
+
+RECOMMENDATION:
+Remove all role/email-pattern authentication bypasses from production builds. Put demo mode behind an explicit development environment flag.
+
+CRITICAL: authorization is missing on backend routes
+
+The API creates JWTs and verifies them only in /api/auth/me.
+
+Routes such as:
+POST /api/events
+POST /api/bookings
+PATCH /api/bookings/:id
+GET /api/guests
+POST /api/guests
+POST /api/guests/scan
+DELETE /api/guests/:id
+PATCH /api/guests/:id/undo
+GET /api/delegations
+
+do not appear to require a valid authenticated user.
+
+A client could potentially call these endpoints directly without a legitimate session.
+
+RECOMMENDATION:
+Create middleware:
+requireAuth
+requireRole('organizer')
+requireRole('centre')
+requireRole('admin')
+requireEventAccess()
+requireDelegationPermission()
+
+Then enforce ownership and delegation at the database query level.
+
+CRITICAL: role is client-controlled during registration
+
+The API accepts role from req.body and only maps:
+centre -> centre
+everything else -> organizer
+
+That prevents arbitrary admin creation, which is good, but it is still not a proper authorization design.
+
+RECOMMENDATION:
+- Public registration should only allow organizer and centre.
+- staff/admin accounts should be provisioned by authorized administrators.
+- Validate roles against an explicit allowlist.
+
+CRITICAL: auth/me response bug
+
+Backend:
+res.json({
+  user: {...}
+});
+
+Frontend:
+const user = await res.json();
+setCurrentUser(user);
+setUserRole(user.role);
+
+The frontend therefore treats { user: {...} } as if it were the User object.
+
+Correct handling should be:
+const data = await res.json();
+setCurrentUser(data.user);
+setUserRole(data.user.role);
+
+This can break session restoration after refresh.
+
+3. PASSWORD & ACCOUNT SECURITY
+-------------------------------
+
+bcrypt is correctly used on the backend for normal registration.
+
+However:
+- password storage in localStorage bypasses this protection
+- Google fallback uses a fixed password-like value:
+  google_sso_pass
+- demo credentials are embedded in frontend code
+- no password policy is enforced
+- no rate limiting exists on login/register
+
+RECOMMENDATION:
+Implement:
+- backend-only password handling
+- minimum password requirements
+- login throttling/rate limiting
+- account lockout or progressive delays
+- email verification
+- password reset
+- session revocation
+- optional MFA for organizer/admin/staff accounts
+- audit logging for authentication events
+
+4. QR SECURITY REVIEW
+---------------------
+
+THIS IS THE MOST IMPORTANT TECHNICAL SECURITY ISSUE.
+
+The product/UI repeatedly describes the QR system as:
+"HMAC-SHA256"
+
+The implementation is NOT HMAC-SHA256.
+
+The backend does:
+- concatenate eventId + guestId + code + secret
+- run a JavaScript integer hash
+- convert the result to base36
+
+That is a custom non-cryptographic hash, not HMAC-SHA256.
+
+The frontend contains the same secret:
+GATEHOUSE-HMAC-SECURE-KEY-2026
+
+Any secret shipped to the browser must be considered public.
+
+Therefore:
+- the browser can reproduce signatures
+- an attacker can inspect the source/bundle
+- the QR signing secret can be extracted
+- forged tokens can potentially be generated
+
+RECOMMENDATION:
+Use server-side cryptographic signing.
+
+Preferred approaches:
+Option A:
+HMAC-SHA256 with a server-only secret using Node's crypto.createHmac.
+
+Option B:
+Ed25519 digital signatures, where:
+- private signing key stays server-side
+- public verification key can be distributed to offline scanners
+
+For a real offline scanner architecture, Ed25519 is especially attractive because the scanner only needs the public key.
+
+Example conceptual payload:
+{
+  "v": 1,
+  "eventId": "...",
+  "guestId": "...",
+  "passId": "...",
+  "iat": 1780000000,
+  "exp": 1780100000
+}
+
+Then sign the canonical payload.
+
+Do not put the private signing secret in:
+- React source
+- localStorage
+- Vite environment variables prefixed VITE_
+- public assets
+
+5. QR VALIDATION LOGIC BUGS
+----------------------------
+
+The scan endpoint verifies the QR signature and extracts eventId/guestId/code.
+
+But after validating the QR, it finds the guest by guestId without explicitly ensuring that:
+qrResult.eventId === requested eventId.
+
+A token for one event should never validate against another event.
+
+RECOMMENDATION:
+Require:
+decoded.eventId === request.eventId
+AND
+guest.eventId === decoded.eventId
+AND
+guest.code === decoded.code
+
+before accepting the scan.
+
+Also add:
+- expiration
+- event status validation
+- revoked pass support
+- cancelled event handling
+- venue/gate authorization
+- replay/duplicate policy
+
+6. CHECK-IN CONCURRENCY
+-----------------------
+
+Current logic is:
+1. read guest
+2. check status
+3. update status
+4. create check-in log
+
+Two scanners hitting the same guest at almost the same time can potentially both see "out" before either update is committed.
+
+RECOMMENDATION:
+Use a transaction/conditional update.
+
+Concept:
+UPDATE Guest
+SET status = 'in', checkinTime = NOW()
+WHERE id = ?
+AND status = 'out'
+
+Then check affected row count.
+
+If 1:
+success
+
+If 0:
+duplicate/already checked in
+
+Create the audit log in the same transaction.
+
+7. BACKEND VALIDATION
+---------------------
+
+Most endpoints destructure request bodies directly.
+
+Examples:
+name.trim()
+Number(capacity)
+requestedDate
+guestEstimate
+eventCentreId
+
+There is no centralized schema validation.
+
+RECOMMENDATION:
+Use Zod or another schema validator for every request.
+
+Validate:
+- required fields
+- string lengths
+- email format
+- phone format
+- numeric ranges
+- dates
+- allowed enum values
+- IDs
+- role
+- event ownership
+- capacity limits
+
+Return consistent 400 responses for validation errors.
+
+8. CORS & HTTP SECURITY
+-----------------------
+
+Current:
+app.use(cors());
+
+This is too permissive for production.
+
+RECOMMENDATION:
+Configure explicit origins.
+
+Also add:
+- Helmet
+- rate limiting
+- request size limits
+- secure headers
+- structured logging
+- HTTPS enforcement at deployment layer
+- CSRF protection if cookie-based authentication is used
+
+9. SECRET MANAGEMENT
+--------------------
+
+Hard-coded secrets exist in source code:
+
+GATEHOUSE-PRODUCTION-JWT-SECRET-KEY-2026
+GATEHOUSE-HMAC-SECURE-KEY-2026
+
+The JWT secret has a fallback value, meaning the application can run with a known secret if environment configuration is missing.
+
+RECOMMENDATION:
+Fail fast in production when secrets are missing.
+
+Example policy:
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET is required');
+}
+
+Rotate all secrets already committed to the repository.
+
+Do not reuse any existing exposed secrets.
+
+10. REGISTRATION FORM INTEGRATION
+---------------------------------
+
+The UI collects:
+- full name
+- email
+- password
+- organization
+- organizer type
+- venue name
+- venue address
+- venue capacity
+- phone
+- country
+- role
+- terms agreement
+
+But registerUser() only sends:
+name
+email
+password
+role
+
+Phone and the other role-specific fields are not sent.
+
+This means the sophisticated registration form is largely cosmetic from a backend data perspective.
+
+RECOMMENDATION:
+Create separate DTOs:
+
+OrganizerRegistration:
+- name
+- email
+- phone
+- password
+- organization
+- organizerType
+- country
+
+VenueRegistration:
+- name
+- email
+- phone
+- password
+- venueName
+- venueAddress
+- venueCapacity
+- country
+
+Then persist them to appropriate tables.
+
+11. GOOGLE SSO
+-------------
+
+The current Google flow is not production-ready.
+
+The fallback modal allows the application to act as if a Google account was selected, then calls registerUser() using:
+google_sso_pass
+
+and hard-coded demo identities.
+
+This should not be described as Google SSO.
+
+RECOMMENDATION:
+Use a real OAuth/OIDC flow.
+
+The backend should verify Google's ID token or authorization code server-side and map the verified Google subject to a Gatehouse account.
+
+Never trust:
+- account name from the browser
+- account email from the browser
+- a frontend-generated "Google login"
+- a fixed SSO password
+
+12. DATA MODEL
+--------------
+
+Prisma models are functional but should be strengthened.
+
+Current domain states are String fields:
+role
+status
+category
+source
+method
+result
+
+RECOMMENDATION:
+Use Prisma enums where appropriate.
+
+Examples:
+enum UserRole
+enum EventStatus
+enum BookingStatus
+enum GuestStatus
+enum GuestCategory
+enum CheckinMethod
+enum CheckinResult
+
+This prevents invalid values at the database layer.
+
+13. DATE/TIME MODEL
+-------------------
+
+Event.date and requestedDate are String.
+
+This is fragile for:
+- timezone handling
+- sorting
+- date validation
+- reporting
+- event scheduling
+
+RECOMMENDATION:
+Use:
+DateTime for actual timestamps.
+DateTime or a carefully designed date-only representation for event dates.
+Store event timezone explicitly, e.g. Africa/Lagos.
+
+14. DATABASE RELATIONSHIP CONCERNS
+----------------------------------
+
+Booking has eventId optional.
+
+When a booking is accepted, the API creates an Event but does not appear to update the Booking to reference the newly created event.
+
+That can leave an accepted booking disconnected from its resulting event.
+
+RECOMMENDATION:
+Create the event and update booking.eventId inside a Prisma transaction.
+
+Similarly, booking acceptance should ensure:
+- venue availability
+- no conflicting booking
+- capacity compatibility
+
+15. GUEST CAPACITY RACE
+-----------------------
+
+Guest creation does:
+count guests
+if count >= capacity -> reject
+then create guest
+
+Two simultaneous requests can both pass the count check.
+
+RECOMMENDATION:
+Use a transaction/locking strategy or a robust database-side capacity constraint strategy.
+
+16. BULK IMPORT
+--------------
+
+Bulk CSV processing uses:
+line.split(",")
+
+This fails for valid CSV values containing commas, quoted strings, escaped quotes, etc.
+
+RECOMMENDATION:
+Use a CSV parser library.
+
+Also:
+- validate every row
+- report rejected rows
+- enforce event capacity
+- use a transaction/batch insert
+- avoid one database request per line
+
+17. CSV EXPORT
+--------------
+
+Frontend export directly exposes:
+- guest ID
+- name
+- email
+- phone
+- category
+- pass code
+- status
+- check-in time
+- staff identity
+
+This is sensitive operational data.
+
+RECOMMENDATION:
+Make report export an authenticated backend operation with:
+- permission checks
+- audit logging
+- event scoping
+- export history
+- optional field selection
+
+If browser-side export remains, make it explicit that it is local-only.
+
+18. LOCAL STORAGE DATA MODEL
+----------------------------
+
+Guests, events and bookings are persisted to localStorage.
+
+This creates:
+- stale data
+- cross-user contamination on shared devices
+- no server conflict resolution
+- no reliable multi-device synchronization
+- easy client-side tampering
+
+For an event access-control system, localStorage should not be treated as the authoritative database.
+
+RECOMMENDATION:
+Server/PostgreSQL is the source of truth.
+
+For offline operation:
+Use IndexedDB + an encrypted/structured offline queue where appropriate, with signed data and a controlled synchronization protocol.
+
+19. "OFFLINE RESILIENCE" CLAIM
+------------------------------
+
+The UI claims robust offline resilience.
+
+The current implementation mostly means:
+"continue using React state/localStorage if the API is unavailable."
+
+That is not the same as a secure offline access-control architecture.
+
+A real offline mode needs:
+- pre-provisioned event data
+- signed pass verification
+- local public verification key
+- device authentication
+- secure local storage
+- offline scan log
+- monotonic/verified timestamps
+- replay controls
+- synchronization queue
+- conflict resolution
+- device revocation
+- audit trail
+
+20. API URL CONFIGURATION
+-------------------------
+
+GatehouseContext:
+http://localhost:5000/api
+
+server/index.ts:
+PORT defaults to 3001
+
+apiService.ts:
+VITE_API_URL || '/api'
+
+This is inconsistent.
+
+Likely result:
+- local frontend attempts localhost:5000
+- local server listens on 3001
+- API fails
+- frontend silently falls back to localStorage
+
+This can make developers believe the app works while backend integration is broken.
+
+RECOMMENDATION:
+Use one environment-driven API base URL.
+
+For example:
+VITE_API_URL=http://localhost:3001/api
+
+and:
+VITE_API_URL=/api
+for same-origin production deployment.
+
+21. VERCEL CONFIGURATION
+------------------------
+
+vercel.json rewrites:
+"/api/(.*)" -> "/api"
+
+This is broad and should be reviewed carefully against the actual Vercel function routing.
+
+The frontend also uses SPA fallback:
+"/(.*)" -> "/index.html"
+
+Ensure API routes are excluded from SPA fallback and actually resolve to the serverless handler.
+
+22. UI / PRODUCT INTEGRITY
+--------------------------
+
+The UI has strong presentation and product storytelling, but several claims currently exceed the implementation.
+
+Examples:
+- HMAC-SHA256 security
+- "cryptographic" QR security
+- 99.99% operational status
+- 2.5 second verification
+- offline resilience
+- "HMAC Token Encryption"
+- "Musa AI" intercepting duplicate passes
+
+These should not be presented as real production capabilities until implemented and measured.
+
+RECOMMENDATION:
+During prototype stage, label these as:
+- target SLA
+- simulated/demo metric
+- planned capability
+
+This protects product credibility.
+
+23. DEMO DATA / REAL PERSON DATA
+--------------------------------
+
+The seed and initial guest data contain recognizable names and organization/email combinations.
+
+For development fixtures, use clearly synthetic identities.
+
+RECOMMENDATION:
+Replace real-looking personal data with:
+Ada Example
+example@demo.invalid
++2348000000000
+
+Keep all demo data obviously synthetic.
+
+24. ERROR HANDLING
+------------------
+
+Many endpoints use:
+catch (err: any) {
+  res.status(500).json({ error: err.message });
+}
+
+This can expose internal implementation/database details.
+
+RECOMMENDATION:
+- log detailed error server-side
+- return safe public error messages
+- attach request/correlation IDs
+- avoid `any`
+- use centralized Express error middleware
+
+25. TYPE SAFETY
+---------------
+
+TypeScript is used well in the frontend, but the backend frequently uses:
+err: any
+decoded: any
+window.google?: any
+JSON parsed into manually asserted types
+
+RECOMMENDATION:
+Replace `any` with:
+unknown + type guards
+typed JWT claims
+typed request DTOs
+typed Google response interfaces
+
+26. CODE QUALITY
+----------------
+
+Positive aspects:
+- clear component structure
+- TypeScript interfaces are present
+- Prisma is a sensible database choice
+- bcrypt is correctly selected
+- Express/Prisma separation is understandable
+- UI is already broken into views/layout components
+- the code has comments explaining intent
+- API route naming is generally coherent
+
+Main quality problem:
+business logic is duplicated between client fallback and backend.
+
+The next phase should reduce duplication rather than adding more UI features.
+
+27. TESTING
+-----------
+
+There is no visible test suite for:
+- authentication
+- authorization
+- QR signing
+- QR verification
+- duplicate check-in
+- event capacity
+- booking acceptance
+- delegation permissions
+- CSV import
+- offline synchronization
+
+For Gatehouse, security and concurrency tests are not optional.
+
+RECOMMENDATION:
+Add:
+- unit tests
+- API integration tests
+- authorization tests
+- QR cryptography tests
+- concurrency tests
+- end-to-end Playwright tests for registration/login/guest registration/scan/check-in
+
+28. BUILD/ENVIRONMENT CHECK
+---------------------------
+
+I attempted to install dependencies and run the build.
+
+The dependency installation could not complete because the environment's package registry returned a 404 while fetching `yn@3.1.1`.
+
+Therefore:
+- a clean `npm run build` could not be conclusively executed in this environment
+- this should be re-run locally/CI with a functioning npm registry
+
+The repository's package configuration itself is structurally reasonable, but build verification should be added to CI.
+
+29. RECOMMENDED TARGET ARCHITECTURE
+-----------------------------------
+
+Frontend
+--------
+React
+  |
+  +-- React Router
+  |
+  +-- AuthProvider
+  |
+  +-- API Client
+  |
+  +-- Offline Sync Manager
+  |
+  +-- Feature hooks
+       +-- useEvents()
+       +-- useGuests()
+       +-- useCheckin()
+       +-- useBookings()
+
+Backend
+-------
+Express/Vercel Function
+  |
+  +-- Security middleware
+  |    +-- Helmet
+  |    +-- CORS
+  |    +-- Rate limiting
+  |    +-- Auth
+  |    +-- Role/permission checks
+  |
+  +-- Validation layer (Zod)
+  |
+  +-- Controllers
+  |
+  +-- Services
+  |    +-- AuthService
+  |    +-- EventService
+  |    +-- GuestService
+  |    +-- CheckinService
+  |    +-- BookingService
+  |    +-- QRService
+  |
+  +-- Prisma
+       |
+       PostgreSQL
+
+Security
+--------
+Server-side signing key
+        |
+        v
+Signed QR pass
+        |
+        v
+Scanner verifies signature
+        |
+        v
+Backend/device policy verifies:
+event + expiry + revocation + permissions
+        |
+        v
+Atomic check-in transaction
+        |
+        v
+Immutable audit log
+
+30. PRIORITIZED FIX PLAN
+------------------------
+
+PHASE 0 — STOP SECURITY DRIFT
+1. Remove hard-coded JWT and QR secrets.
+2. Rotate any secrets already exposed in repository history.
+3. Remove plaintext password storage from localStorage.
+4. Remove fake Google SSO.
+5. Remove email-pattern/demo authentication from production path.
+6. Add backend authentication middleware.
+7. Add role/ownership authorization.
+8. Replace fake QR hash with real HMAC-SHA256 or Ed25519.
+
+PHASE 1 — MAKE BACKEND THE SOURCE OF TRUTH
+1. Remove duplicate server implementation.
+2. Make API client the only frontend data-access layer.
+3. Fix API base URL configuration.
+4. Remove silent localStorage authentication fallback.
+5. Move guest/event/booking persistence to backend.
+6. Implement explicit offline queue if offline mode is required.
+
+PHASE 2 — FIX CORE DOMAIN LOGIC
+1. Atomic check-in.
+2. Event-scoped QR validation.
+3. Event capacity concurrency handling.
+4. Booking acceptance transaction.
+5. Delegation permission enforcement.
+6. Proper event/venue ownership.
+
+PHASE 3 — REGISTRATION & IDENTITY
+1. Implement complete organizer registration.
+2. Implement complete venue registration.
+3. Persist organization/venue information.
+4. Email verification.
+5. Password reset.
+6. Real Google OAuth/OIDC.
+7. Staff invitation system.
+8. Admin provisioning.
+
+PHASE 4 — HARDEN API
+1. Zod validation.
+2. Helmet.
+3. strict CORS.
+4. rate limiting.
+5. request size limits.
+6. structured errors.
+7. audit logs.
+8. monitoring.
+9. CI build/lint/test.
+
+PHASE 5 — REAL OFFLINE MODE
+1. IndexedDB.
+2. signed pass verification with public key.
+3. device enrollment.
+4. offline scan queue.
+5. sync protocol.
+6. conflict handling.
+7. device revocation.
+8. tamper-resistant audit trail.
+
+31. SPECIFIC FILES TO CHANGE
+----------------------------
+
+HIGH PRIORITY
+- src/context/GatehouseContext.tsx
+- src/services/apiService.ts
+- src/utils/qrGenerator.ts
+- src/types/index.ts
+- src/components/views/AuthView.tsx
+- api/index.ts
+- server/index.ts
+- prisma/schema.prisma
+- prisma/seed.ts
+- vercel.json
+
+ARCHITECTURAL REFACTOR
+Create:
+- src/lib/apiClient.ts
+- src/features/auth/
+- src/features/events/
+- src/features/guests/
+- src/features/checkin/
+- src/features/bookings/
+- server/app.ts
+- server/middleware/auth.ts
+- server/middleware/authorization.ts
+- server/services/qrService.ts
+- server/services/checkinService.ts
+- server/services/authService.ts
+- server/validation/
+
+32. ACCEPTANCE CRITERIA BEFORE PRODUCTION
+------------------------------------------
+
+Authentication:
+[ ] No plaintext passwords in browser storage
+[ ] No demo authentication bypass
+[ ] Real OAuth/OIDC if Google login is advertised
+[ ] Authenticated API endpoints reject anonymous requests
+[ ] Role permissions enforced server-side
+[ ] Session revocation works
+
+QR:
+[ ] Real cryptographic signing
+[ ] Private secret/key never reaches browser
+[ ] Event ID validated
+[ ] Expiration supported
+[ ] Revocation supported
+[ ] Duplicate scans are atomic
+[ ] Forged QR tests fail
+
+Data:
+[ ] PostgreSQL is source of truth
+[ ] localStorage is not authoritative
+[ ] Offline queue is explicit
+[ ] Event capacity is concurrency-safe
+[ ] Booking acceptance is transactional
+[ ] Audit logs cannot be casually overwritten
+
+Operations:
+[ ] API rate limiting
+[ ] strict CORS
+[ ] secure headers
+[ ] validation
+[ ] monitoring
+[ ] error tracking
+[ ] CI build/lint/test
+[ ] database migration strategy
+[ ] backups and recovery plan
+
+PRODUCT:
+[ ] Security claims match actual implementation
+[ ] SLA claims are measured or labelled as targets
+[ ] Demo data is synthetic
+[ ] Nigerian privacy/compliance language has been reviewed professionally
+
+FINAL ASSESSMENT
+----------------
+Gatehouse has a good foundation for a serious event access-control SaaS, especially at the UI/product-prototype level.
+
+The architecture should NOT be expanded by simply adding more screens/features right now.
+
+The correct next move is to stabilize the foundation:
+1. security
+2. authentication
+3. authorization
+4. backend source of truth
+5. QR cryptography
+6. atomic check-in
+7. offline architecture
+8. testing
+
+Once those are fixed, the existing UI can be connected to a much more credible production backend without throwing away the current design work.
+
+OVERALL SCORE
+-------------
+UI/component organization:       8/10
+Product prototype completeness:  8/10
+TypeScript usage:                7/10
+Backend structure:               5/10
+Data architecture:               5/10
+Authentication:                  3/10
+Authorization:                   2/10
+QR security:                     1/10
+Offline architecture:            3/10
+Testing:                         2/10
+Production readiness:            3/10
+
+Overall prototype quality:       7/10
+Overall production readiness:    3/10
+
+Most important conclusion:
+DO NOT market the current QR implementation as HMAC-SHA256 security. It is a custom non-cryptographic hash and the signing secret is exposed in the client. Fix this before treating Gatehouse as a real security/access-control product.

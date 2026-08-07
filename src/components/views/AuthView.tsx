@@ -95,12 +95,21 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
         });
       }
     } else {
-      // Register new user
+      // Register new user with complete registration DTO fields
       const success = await registerUser(
         fullName || 'New User',
         email,
         password,
-        role
+        role,
+        {
+          phone,
+          organization,
+          organizerType,
+          venueName,
+          venueAddress,
+          venueCapacity,
+          country,
+        }
       );
       if (success) {
         setStatusMsg({

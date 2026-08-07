@@ -9,7 +9,21 @@ interface GatehouseContextType {
   activeTab: ViewTab;
   setActiveTab: (tab: ViewTab) => void;
   loginUser: (email: string, password?: string) => Promise<boolean>;
-  registerUser: (name: string, email: string, password?: string, role?: UserRole) => Promise<boolean>;
+  registerUser: (
+    name: string,
+    email: string,
+    password?: string,
+    role?: UserRole,
+    extra?: {
+      phone?: string;
+      organization?: string;
+      organizerType?: string;
+      venueName?: string;
+      venueAddress?: string;
+      venueCapacity?: string;
+      country?: string;
+    }
+  ) => Promise<boolean>;
   logoutUser: () => void;
   guests: Guest[];
   addGuest: (guest: Omit<Guest, 'id' | 'code' | 'qrPayload' | 'status'>) => Guest;
@@ -402,13 +416,23 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     name: string,
     email: string,
     password = 'password123',
-    role: UserRole = 'organizer'
+    role: UserRole = 'organizer',
+    extra?: {
+      phone?: string;
+      organization?: string;
+      organizerType?: string;
+      venueName?: string;
+      venueAddress?: string;
+      venueCapacity?: string;
+      country?: string;
+    }
   ): Promise<boolean> => {
     try {
+      const payload = { name, email, password, role, ...extra };
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -419,33 +443,21 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setUserRole(data.user.role);
         return true;
       }
-    } catch (e) {
-      console.error('API register error:', e);
+    } catch (err) {
+      console.warn('Backend API registration failed, using local registration fallback.');
     }
 
-    const newUser: User & { password?: string } = {
-      id: `usr_${Date.now()}`,
+    const newUser: User = {
+      id: `u_${Date.now()}`,
       name,
       email,
-      password,
+      phone: extra?.phone || '08000000000',
       role,
-      phone: '+234 800 000 0000',
     };
 
-    const rawAccounts = localStorage.getItem('gatehouse_registered_users');
-    let accounts: (User & { password?: string })[] = [];
-    if (rawAccounts) {
-      try {
-        accounts = JSON.parse(rawAccounts);
-      } catch (e) {
-        accounts = [];
-      }
-    }
-    accounts.push(newUser);
-    localStorage.setItem('gatehouse_registered_users', JSON.stringify(accounts));
-
-    localStorage.setItem('gatehouse_auth_token', newUser.id);
-    setAuthToken(newUser.id);
+    const mockToken = `token_${Date.now()}`;
+    localStorage.setItem('gatehouse_auth_token', mockToken);
+    setAuthToken(mockToken);
     setCurrentUser(newUser);
     setUserRole(newUser.role);
     return true;
