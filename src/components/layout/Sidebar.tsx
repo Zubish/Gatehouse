@@ -12,6 +12,7 @@ import {
   Settings,
   ShieldAlert,
   LogOut,
+  Home,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -86,13 +87,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
   );
 
   return (
-    <aside className="w-64 shrink-0 border-r border-border/40 bg-navy-900/95 backdrop-blur-xl flex flex-col justify-between min-h-[calc(100vh-65px)] p-4 space-y-6">
+    <aside className="w-64 shrink-0 border-r border-border/40 bg-navy-900/95 backdrop-blur-xl flex flex-col justify-between min-h-screen p-4 space-y-6">
       
       {/* NAVIGATION ITEMS LIST */}
       <div className="space-y-6">
         
-        {/* WORKSPACE HEADER */}
-        <div className="px-3 py-2 space-y-1">
+        {/* BRAND LOGO HEADER IN SIDEBAR */}
+        <div
+          onClick={() => onNavigate('landing')}
+          className="flex items-center gap-3 px-3 py-2 cursor-pointer group border-b border-border/40 pb-4"
+        >
+          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center transition-transform group-hover:scale-105">
+            <img src="/logo.png" alt="Gatehouse Logo" className="h-full w-full object-contain rounded-lg" />
+          </div>
+          <span className="font-heading text-lg font-bold tracking-tight text-foreground">
+            Gatehouse
+          </span>
+        </div>
+
+        {/* WORKSPACE USER HEADER */}
+        <div className="px-3 py-1 space-y-1">
           <div className="text-[10px] font-mono text-muted-foreground uppercase font-bold tracking-wider">
             Workspace Control Room
           </div>
@@ -128,6 +142,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
               </button>
             );
           })}
+
+          <button
+            onClick={() => onNavigate('landing')}
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-card/60 transition-all cursor-pointer mt-4"
+          >
+            <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="truncate">Public Home</span>
+          </button>
         </nav>
 
       </div>

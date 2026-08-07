@@ -34,17 +34,7 @@ export function App() {
 
   const currentView = activeTab;
 
-  // Pages where footer is explicitly allowed: ONLY landing, login, register, privacy-policy, terms-of-service, security-sla
-  const isFooterAllowedPage = [
-    'landing',
-    'login',
-    'register',
-    'privacy-policy',
-    'terms-of-service',
-    'security-sla',
-  ].includes(currentView);
-
-  // Pages that use the full-width layout without sidebar
+  // Pages that use the full-width layout with Topbar & Footer (Public Marketing & Legal Pages)
   const isPublicFullWidthPage = [
     'landing',
     'login',
@@ -56,13 +46,15 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
-      {/* TOPBAR NAVIGATION */}
-      <Topbar currentView={currentView} onNavigate={handleNavigate} />
+      {/* TOPBAR NAVIGATION — RENDERED ONLY ON PUBLIC MARKETING & LEGAL PAGES */}
+      {isPublicFullWidthPage && (
+        <Topbar currentView={currentView} onNavigate={handleNavigate} />
+      )}
 
       {/* APP BODY LAYOUT */}
       <div className="flex-1 flex w-full">
         
-        {/* LEFT SIDEBAR NAVIGATION (For Control Room App Views Only) */}
+        {/* LEFT SIDEBAR NAVIGATION (For Control Room App Views Only — Moves all the way up to top) */}
         {!isPublicFullWidthPage && (
           <Sidebar currentView={currentView} onNavigate={handleNavigate} />
         )}
@@ -98,8 +90,8 @@ export function App() {
         </main>
       </div>
 
-      {/* FOOTER - REMOVED FROM ALL CONTROL ROOM VIEWS, ALLOWED ONLY ON LANDING AND AUTH/LEGAL PAGES */}
-      {isFooterAllowedPage && !['landing', 'privacy-policy', 'terms-of-service', 'security-sla'].includes(currentView) && (
+      {/* FOOTER - RENDERED ONLY ON LANDING AND AUTH/LEGAL PAGES, REMOVED FROM ALL CONTROL ROOM VIEWS */}
+      {isPublicFullWidthPage && !['landing', 'privacy-policy', 'terms-of-service', 'security-sla'].includes(currentView) && (
         <footer className="border-t border-border/40 py-6 text-center text-xs font-mono text-muted-foreground">
           <div className="text-muted-foreground">
             &copy; {new Date().getFullYear()} Gatehouse Inc. All rights reserved. &bull;{' '}
