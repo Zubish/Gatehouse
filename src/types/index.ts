@@ -1,5 +1,11 @@
+/**
+ * Gatehouse 2.0 Enterprise TypeScript Interfaces & Data Contracts
+ */
+
+/** User Role Authorization Levels */
 export type UserRole = 'organizer' | 'centre' | 'staff' | 'guest' | 'admin';
 
+/** Registered User Account Schema */
 export interface User {
   id: string;
   name: string;
@@ -11,6 +17,7 @@ export interface User {
   createdAt?: string;
 }
 
+/** Event Centre Facility Listing */
 export interface EventCentre {
   id: string;
   userId: string;
@@ -26,6 +33,7 @@ export interface EventCentre {
   status: 'pending' | 'approved' | 'rejected';
 }
 
+/** Host Event Instance */
 export interface EventItem {
   id: string;
   organizerId: string;
@@ -39,6 +47,7 @@ export interface EventItem {
   eventCentre?: EventCentre;
 }
 
+/** Organizer Venue Booking Request */
 export interface Booking {
   id: string;
   eventId?: string;
@@ -53,6 +62,7 @@ export interface Booking {
   createdAt?: string;
 }
 
+/** Path B Venue Ushering Delegation Permissions */
 export interface Delegation {
   id: string;
   eventId: string;
@@ -62,6 +72,7 @@ export interface Delegation {
   createdAt?: string;
 }
 
+/** Attendee Guest Pass Record */
 export interface Guest {
   id: string;
   eventId: string;
@@ -77,6 +88,7 @@ export interface Guest {
   checkedInBy?: string | null;
 }
 
+/** Audit Checkin Transaction Log */
 export interface CheckinLog {
   id: string;
   guestId: string;
@@ -87,6 +99,7 @@ export interface CheckinLog {
   result: 'success' | 'duplicate' | 'invalid';
 }
 
+/** Active Navigation Route Tab */
 export type ViewRoute =
   | 'landing'
   | 'login'
