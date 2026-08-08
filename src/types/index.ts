@@ -128,6 +128,7 @@ export type ViewRoute =
   | 'admin'
   | 'privacy-policy'
   | 'terms-of-service'
-  | 'security-sla';
+  | 'security-sla'
+  | 'demo';
 
 export type ViewTab = ViewRoute;

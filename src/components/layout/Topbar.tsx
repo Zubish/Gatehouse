@@ -216,23 +216,33 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
             </button>
 
             {isDemoDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-border/80 bg-navy-900 p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-border/80 bg-navy-950 p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="px-3 py-1.5 text-[10px] font-mono text-muted-foreground uppercase font-bold border-b border-border/40 mb-1">
                   Select Sandbox Demo
                 </div>
                 <button
                   type="button"
+                  onClick={() => {
+                    setIsDemoDropdownOpen(false);
+                    onNavigate('demo');
+                  }}
+                  className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-[#5cbdb9] hover:bg-card flex items-center justify-between cursor-pointer transition-colors"
+                >
+                  <span>🚀 Interactive Demo (/demo)</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleDemoLogin('organizer')}
                   className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-foreground hover:bg-card flex items-center justify-between cursor-pointer transition-colors"
                 >
-                  <span>⚡ Event Organizer</span>
+                  <span>⚡ Demo Organizer</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDemoLogin('centre')}
                   className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-[#38ef7d] hover:bg-card flex items-center justify-between cursor-pointer transition-colors"
                 >
-                  <span>🏛️ Venue Owner</span>
+                  <span>🏛️ Demo Venue Owner</span>
                 </button>
               </div>
             )}

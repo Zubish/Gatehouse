@@ -16,6 +16,7 @@ import { AdminPortalView } from './components/views/AdminPortalView';
 import { PrivacyPolicyView } from './components/views/PrivacyPolicyView';
 import { TermsOfServiceView } from './components/views/TermsOfServiceView';
 import { SecuritySlaView } from './components/views/SecuritySlaView';
+import { DemoView } from './components/views/DemoView';
 import type { ViewRoute } from './types';
 
 export function App() {
@@ -34,7 +35,7 @@ export function App() {
 
   const currentView = activeTab;
 
-  // Pages that use the full-width layout with Topbar & Footer (Public Marketing & Legal Pages)
+  // Pages that use the full-width layout with Topbar & Footer (Public Marketing, Legal & Demo Sandbox Pages)
   const isPublicFullWidthPage = [
     'landing',
     'login',
@@ -42,6 +43,7 @@ export function App() {
     'privacy-policy',
     'terms-of-service',
     'security-sla',
+    'demo',
   ].includes(currentView);
 
   return (
@@ -77,7 +79,8 @@ export function App() {
           {currentView === 'settings' && <SettingsView />}
           {currentView === 'admin' && <AdminPortalView />}
 
-          {/* DEDICATED NIGERIAN LAW LEGAL PAGES */}
+          {/* DEDICATED NIGERIAN LAW LEGAL PAGES & DEMO SANDBOX */}
+          {currentView === 'demo' && <DemoView onNavigate={handleNavigate} />}
           {currentView === 'privacy-policy' && (
             <PrivacyPolicyView onNavigate={handleNavigate} />
           )}

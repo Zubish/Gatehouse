@@ -129,6 +129,7 @@ const TAB_PATH_MAP: Record<ViewTab, string> = {
   'privacy-policy': '/privacy-policy',
   'terms-of-service': '/terms-of-service',
   'security-sla': '/security-sla',
+  demo: '/demo',
 };
 
 const ROUTE_PATH_MAP: Record<string, ViewTab> = Object.entries(TAB_PATH_MAP).reduce((acc, [tab, path]) => {
@@ -144,6 +145,7 @@ const PUBLIC_MARKETING_VIEWS: ViewTab[] = [
   'privacy-policy',
   'terms-of-service',
   'security-sla',
+  'demo',
 ];
 
 export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -494,7 +494,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
               {/* BRAND CTA BUTTON */}
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-gradient-to-r from-[#3b6fa0] via-[#5cbdb9] to-[#38ef7d] py-3.5 px-4 text-xs font-mono font-extrabold text-[#0f1b3d] hover:opacity-95 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-[#5cbdb9]/20 hover:shadow-[#5cbdb9]/40"
+                className="w-full rounded-2xl bg-[#3b6fa0] hover:bg-[#3b6fa0]/90 py-3.5 px-4 text-xs font-mono font-extrabold text-[#e8edf3] flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-[#3b6fa0]/25"
               >
                 <span>{authMode === 'register' ? 'Create Gatehouse Account' : 'Sign In to Workspace'}</span>
               </button>
