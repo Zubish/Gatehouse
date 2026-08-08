@@ -742,56 +742,6 @@ app.post("/api/public/events/:registrationToken/register", async (req, res) => {
   }
 });
 
-// ---------------- GOOGLE AUTH ----------------
-app.post("/api/auth/google", async (req, res) => {
-  try {
-    const { credential, role } = req.body;
-    if (!credential) return res.status(400).json({ error: "Credential is required." });
-
-    const decoded = jwt.decode(credential) as any;
-    if (!decoded || !decoded.email || !decoded.name) {
-      return res.status(400).json({ error: "Invalid Google credential." });
-    }
-
-    const email = decoded.email.toLowerCase().trim();
-    const name = decoded.name.trim();
-    let user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user) {
-      const userRole = role === "centre" ? "centre" : "organizer";
-      user = await prisma.user.create({
-        data: {
-          name,
-          email,
-          phone: "08000000000",
-          password: "",
-          role: userRole,
-          country: "Nigeria",
-        },
-      });
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        organization: user.organization,
-      },
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // ---------------- EVENT STATS ----------------
 app.get("/api/events/:eventId/stats", async (req, res) => {

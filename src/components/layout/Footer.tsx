@@ -39,8 +39,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNav('landing')}>
               <img src="/logo.png" alt="Gatehouse Logo" className="h-8 w-8 object-contain rounded-md" />
-              <span className="font-heading text-xl font-bold tracking-tight text-foreground">
-                Gatehouse
+              <span className="font-heading text-lg font-bold text-[#e8edf3] tracking-tight flex items-center">
+                <img src="/logo.png" alt="G" className="h-5 w-5 object-contain inline-block -mr-0.5" />
+                <span>atehouse</span>
               </span>
             </div>
 
