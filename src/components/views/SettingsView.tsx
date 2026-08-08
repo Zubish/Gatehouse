@@ -17,7 +17,7 @@ export const SettingsView: React.FC = () => {
   const [smsTestMsg, setSmsTestMsg] = useState('');
 
   const handleSave = async () => {
-    const newEvt = createEvent(name, date, '18:00', capacity);
+    const newEvt = await createEvent(name, date, '18:00', capacity);
     if (newEvt) {
       setSavedMsg(`New Event Instance Created: ${newEvt.name}`);
       setTimeout(() => setSavedMsg(''), 2500);

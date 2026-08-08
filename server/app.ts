@@ -610,6 +610,235 @@ app.patch("/api/guests/:id/undo", async (req, res) => {
   }
 });
 
+// ---------------- BULK CSV IMPORT ----------------
+app.post("/api/guests/bulk", async (req, res) => {
+  try {
+    const { eventId, csvData } = req.body;
+    if (!eventId || !csvData) return res.status(400).json({ error: "Missing eventId or csvData" });
+
+    const eventObj = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!eventObj) return res.status(404).json({ error: "Event not found" });
+
+    const lines = csvData.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    if (lines.length > 0 && lines[0].toLowerCase().includes("name")) {
+      lines.shift();
+    }
+
+    const currentCount = await prisma.guest.count({ where: { eventId } });
+    const availableSlots = eventObj.capacity - currentCount;
+
+    if (availableSlots <= 0) {
+      return res.status(400).json({ error: "Event capacity cap reached." });
+    }
+
+    let added = 0;
+    const errors: string[] = [];
+    const toProcess = lines.slice(0, availableSlots);
+    if (lines.length > availableSlots) {
+      errors.push(`Skipped ${lines.length - availableSlots} guests due to capacity limits.`);
+    }
+
+    for (const line of toProcess) {
+      const [name, email, category, organization] = line.split(",").map((s: string) => s.trim());
+      if (!name) {
+        errors.push(`Skipped invalid row: ${line}`);
+        continue;
+      }
+      const guestId = "g_" + Math.random().toString(36).substring(2, 9);
+      const code = genCode();
+      const guestCategory = category === "VIP" ? "VIP" : "Regular";
+      const qrPayload = signQrToken(eventId, guestId, code, guestCategory);
+
+      try {
+        await prisma.guest.create({
+          data: {
+            id: guestId,
+            eventId,
+            name,
+            email: email || "",
+            category: guestCategory,
+            source: "organizer",
+            code,
+            qrPayload,
+            status: "out",
+          }
+        });
+        added++;
+      } catch (err: any) {
+        errors.push(`Error adding ${name}: ${err.message}`);
+      }
+    }
+
+    res.json({ added, errors });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- PUBLIC EVENT LOOKUP ----------------
+app.get("/api/public/events/:registrationToken", async (req, res) => {
+  try {
+    const { registrationToken } = req.params;
+    const eventObj = await prisma.event.findFirst({
+      where: { registrationLinkToken: registrationToken },
+    });
+    
+    if (!eventObj) return res.status(404).json({ error: "Event not found" });
+
+    const guestCount = await prisma.guest.count({ where: { eventId: eventObj.id } });
+
+    res.json({
+      name: eventObj.name,
+      date: eventObj.date,
+      capacity: eventObj.capacity,
+      currentGuestCount: guestCount,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- SELF-REGISTRATION ----------------
+app.post("/api/public/events/:registrationToken/register", async (req, res) => {
+  try {
+    const { registrationToken } = req.params;
+    const { name, phone, email, organization } = req.body;
+
+    const eventObj = await prisma.event.findFirst({
+      where: { registrationLinkToken: registrationToken },
+    });
+    
+    if (!eventObj) return res.status(404).json({ error: "Event not found" });
+
+    const currentCount = await prisma.guest.count({ where: { eventId: eventObj.id } });
+    if (currentCount >= eventObj.capacity) {
+      return res.status(400).json({ error: "Event capacity cap reached." });
+    }
+
+    if (!name) return res.status(400).json({ error: "Name is required." });
+
+    const guestId = "g_" + Math.random().toString(36).substring(2, 9);
+    const code = genCode();
+    const qrPayload = signQrToken(eventObj.id, guestId, code, "Regular");
+
+    const guest = await prisma.guest.create({
+      data: {
+        id: guestId,
+        eventId: eventObj.id,
+        name: name.trim(),
+        phone: (phone || "").trim(),
+        email: email || "",
+        category: "Regular",
+        source: "self_registered",
+        code,
+        qrPayload,
+        status: "out",
+      },
+    });
+
+    res.status(201).json(guest);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- GOOGLE AUTH ----------------
+app.post("/api/auth/google", async (req, res) => {
+  try {
+    const { credential, role } = req.body;
+    if (!credential) return res.status(400).json({ error: "Credential is required." });
+
+    const decoded = jwt.decode(credential) as any;
+    if (!decoded || !decoded.email || !decoded.name) {
+      return res.status(400).json({ error: "Invalid Google credential." });
+    }
+
+    const email = decoded.email.toLowerCase().trim();
+    const name = decoded.name.trim();
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      const userRole = role === "centre" ? "centre" : "organizer";
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          phone: "08000000000",
+          password: "",
+          role: userRole,
+          country: "Nigeria",
+        },
+      });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        organization: user.organization,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- EVENT STATS ----------------
+app.get("/api/events/:eventId/stats", async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const totalGuests = await prisma.guest.count({ where: { eventId } });
+    const checkedInCount = await prisma.guest.count({ where: { eventId, status: "in" } });
+    const vipCount = await prisma.guest.count({ where: { eventId, category: "VIP" } });
+    const checkinRate = totalGuests > 0 ? (checkedInCount / totalGuests) * 100 : 0;
+
+    res.json({
+      totalGuests,
+      checkedInCount,
+      vipCount,
+      checkinRate,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- CHECKIN LOGS ----------------
+app.get("/api/checkin-logs", async (req, res) => {
+  try {
+    const { eventId } = req.query;
+    const where = eventId ? { eventId: String(eventId) } : {};
+    
+    const logs = await prisma.checkinLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    });
+    
+    const guestIds = logs.map((l: any) => l.guestId);
+    const guests = await prisma.guest.findMany({ where: { id: { in: guestIds } } });
+    const guestMap = new Map(guests.map((g: any) => [g.id, g.name]));
+
+    const logsWithNames = logs.map((l: any) => ({
+      ...l,
+      guestName: guestMap.get(l.guestId) || "Unknown",
+    }));
+
+    res.json(logsWithNames);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---------------- ADMIN DATA PURGE (FRESH CLEAN SYSTEM) ----------------
 
 app.post("/api/admin/purge-data", async (req, res) => {

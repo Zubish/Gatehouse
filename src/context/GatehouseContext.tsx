@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { api } from '../lib/api-client';
 import type { User, UserRole, Guest, EventItem, EventCentre, Booking, Delegation, CheckinLog, ViewRoute } from '../types';
 
 export type ViewTab = ViewRoute;
@@ -26,22 +27,22 @@ interface GatehouseContextType {
   ) => Promise<boolean>;
   logoutUser: () => void;
   guests: Guest[];
-  addGuest: (guest: Omit<Guest, 'id' | 'code' | 'qrPayload' | 'status'>) => Guest;
-  undoCheckin: (guestId: string) => void;
-  removeGuest: (guestId: string) => void;
-  bulkImportGuests: (rawCsv: string) => number;
+  addGuest: (guest: Omit<Guest, 'id' | 'code' | 'qrPayload' | 'status'>) => Promise<Guest>;
+  undoCheckin: (guestId: string) => Promise<void>;
+  removeGuest: (guestId: string) => Promise<void>;
+  bulkImportGuests: (rawCsv: string) => Promise<number>;
   checkInGuest: (guestId: string, agentName?: string, method?: 'qr' | 'manual_code' | 'walkin') => Promise<{ result: string; message: string; guest?: Guest }>;
   processQrScan: (qrPayload: string) => Promise<{ result: string; message: string; guest?: Guest }>;
   activeEvent: EventItem;
   events: EventItem[];
-  createEvent: (name: string, date: string, startTime: string, capacity: number) => EventItem;
+  createEvent: (name: string, date: string, startTime: string, capacity: number) => Promise<EventItem>;
   eventCentres: EventCentre[];
   centres: EventCentre[];
   selectedCentre: EventCentre | null;
   selectCentre: (centre: EventCentre | null) => void;
   bookings: Booking[];
-  createBookingRequest: (eventCentreId: string, eventName: string, requestedDate: string, guestEstimate: number, message?: string) => Booking;
-  updateBookingStatus: (bookingId: string, status: 'accepted' | 'declined') => void;
+  createBookingRequest: (eventCentreId: string, eventName: string, requestedDate: string, guestEstimate: number, message?: string) => Promise<Booking>;
+  updateBookingStatus: (bookingId: string, status: 'accepted' | 'declined') => Promise<void>;
   delegations: Delegation[];
   checkinLogs: CheckinLog[];
   checkinTimeline: Date[];
@@ -49,8 +50,6 @@ interface GatehouseContextType {
 }
 
 const GatehouseContext = createContext<GatehouseContextType | undefined>(undefined);
-
-const API_BASE = 'http://localhost:5000/api';
 
 const DEFAULT_EVENT: EventItem = {
   id: 'evt_2026_01',
@@ -158,51 +157,48 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
 
-  const [guests, setGuests] = useState<Guest[]>(() => {
-    const saved = localStorage.getItem('gatehouse_guests');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return INITIAL_GUESTS;
-  });
-
-  const [events, setEvents] = useState<EventItem[]>(() => {
-    const saved = localStorage.getItem('gatehouse_events');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return [DEFAULT_EVENT];
-  });
-
-  const [activeEvent, setActiveEvent] = useState<EventItem>(() => events[0] || DEFAULT_EVENT);
+  const [guests, setGuests] = useState<Guest[]>(INITIAL_GUESTS);
+  const [events, setEvents] = useState<EventItem[]>([DEFAULT_EVENT]);
+  const [activeEvent, setActiveEvent] = useState<EventItem>(DEFAULT_EVENT);
   const [eventCentres] = useState<EventCentre[]>(INITIAL_CENTRES);
   const [selectedCentre, setSelectedCentre] = useState<EventCentre | null>(INITIAL_CENTRES[0]);
-
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    const saved = localStorage.getItem('gatehouse_bookings');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return [];
-  });
-
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [delegations] = useState<Delegation[]>([]);
   const [checkinLogs] = useState<CheckinLog[]>([]);
   const [checkinTimeline, setCheckinTimeline] = useState<Date[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Synchronize state changes to localStorage
-  useEffect(() => {
-    localStorage.setItem('gatehouse_guests', JSON.stringify(guests));
-  }, [guests]);
+  const refreshGuests = useCallback(async (eventId?: string) => {
+    try {
+      const g = await api.getGuests(eventId || activeEvent.id);
+      setGuests(g);
+    } catch (e) {
+      console.error('Failed to fetch guests', e);
+    }
+  }, [activeEvent.id]);
 
   useEffect(() => {
-    localStorage.setItem('gatehouse_events', JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    localStorage.setItem('gatehouse_bookings', JSON.stringify(bookings));
-  }, [bookings]);
+    if (currentUser) {
+      const loadData = async () => {
+        try {
+          const [g, e, b] = await Promise.all([
+            api.getGuests(activeEvent.id),
+            api.getEvents(),
+            api.getBookings()
+          ]);
+          setGuests(g);
+          setEvents(e.length > 0 ? e : [DEFAULT_EVENT]);
+          if (e.length > 0 && !e.some(ev => ev.id === activeEvent.id)) {
+             setActiveEvent(e[0]);
+          }
+          setBookings(b);
+        } catch (err) {
+          console.error('Failed loading data:', err);
+        }
+      };
+      loadData();
+    }
+  }, [currentUser, activeEvent.id]);
 
   const changeTab = useCallback((newTab: ViewTab, pushHistory = true) => {
     if (
@@ -251,30 +247,11 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     const initAuth = async () => {
       if (authToken) {
-        const rawAccounts = localStorage.getItem('gatehouse_registered_users');
-        if (rawAccounts) {
-          try {
-            const accounts: (User & { password?: string })[] = JSON.parse(rawAccounts);
-            const matched = accounts.find((a) => a.id === authToken || a.email === authToken);
-            if (matched) {
-              setCurrentUser(matched);
-              setUserRole(matched.role);
-              setLoading(false);
-              return;
-            }
-          } catch (e) {
-            console.error('Failed parsing registered users:', e);
-          }
-        }
-
         try {
-          const res = await fetch(`${API_BASE}/auth/me`, {
-            headers: { Authorization: `Bearer ${authToken}` },
-          });
-          if (res.ok) {
-            const user = await res.json();
-            setCurrentUser(user);
-            setUserRole(user.role);
+          const res = await api.getMe();
+          if (res && res.user) {
+            setCurrentUser(res.user);
+            setUserRole(res.user.role);
           }
         } catch (e) {
           console.error('Auth verification error:', e);
@@ -287,44 +264,14 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const loginUser = async (email: string, password = ''): Promise<boolean> => {
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('gatehouse_auth_token', data.token);
-        setAuthToken(data.token);
-        setCurrentUser(data.user);
-        setUserRole(data.user.role);
-        return true;
-      }
+      const data = await api.login({ email, password });
+      localStorage.setItem('gatehouse_auth_token', data.token);
+      setAuthToken(data.token);
+      setCurrentUser(data.user);
+      setUserRole(data.user.role);
+      return true;
     } catch (e) {
       console.error('API login unavailable:', e);
-    }
-
-    const rawAccounts = localStorage.getItem('gatehouse_registered_users');
-    if (rawAccounts) {
-      try {
-        const accounts: (User & { password?: string })[] = JSON.parse(rawAccounts);
-        const match = accounts.find((a) => a.email.toLowerCase() === email.toLowerCase());
-        if (match) {
-          if (match.password && password && match.password !== password) {
-            console.warn('Password mismatch');
-            return false;
-          }
-          const token = match.id;
-          localStorage.setItem('gatehouse_auth_token', token);
-          setAuthToken(token);
-          setCurrentUser(match);
-          setUserRole(match.role);
-          return true;
-        }
-      } catch (e) {
-        console.error('Local accounts parse error:', e);
-      }
     }
 
     const isDemoEmail = email === 'demo@gatehouse.app' || email.includes('organizer');
@@ -375,38 +322,16 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   ): Promise<boolean> => {
     try {
       const payload = { name, email, password, role, ...extra };
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('gatehouse_auth_token', data.token);
-        setAuthToken(data.token);
-        setCurrentUser(data.user);
-        setUserRole(data.user.role);
-        return true;
-      }
+      const data = await api.register(payload);
+      localStorage.setItem('gatehouse_auth_token', data.token);
+      setAuthToken(data.token);
+      setCurrentUser(data.user);
+      setUserRole(data.user.role);
+      return true;
     } catch (err) {
-      console.warn('Backend API registration failed, using local registration fallback.');
+      console.warn('Backend API registration failed.');
+      return false;
     }
-
-    const newUser: User = {
-      id: `u_${Date.now()}`,
-      name,
-      email,
-      phone: extra?.phone || '08000000000',
-      role,
-    };
-
-    const mockToken = `token_${Date.now()}`;
-    localStorage.setItem('gatehouse_auth_token', mockToken);
-    setAuthToken(mockToken);
-    setCurrentUser(newUser);
-    setUserRole(newUser.role);
-    return true;
   };
 
   const logoutUser = () => {
@@ -417,55 +342,43 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     changeTab('landing');
   };
 
-  const createEvent = (name: string, date: string, startTime: string, capacity: number): EventItem => {
-    const newEvt: EventItem = {
-      id: `evt_${Date.now()}`,
-      name,
-      date,
-      startTime,
-      capacity,
-      registeredCount: 0,
-      checkedInCount: 0,
-      organizerId: currentUser?.id || 'org_default',
-    };
+  const createEvent = async (name: string, date: string, startTime: string, capacity: number): Promise<EventItem> => {
+    const newEvt = await api.createEvent({ name, date, startTime, capacity });
     setEvents((prev) => [newEvt, ...prev]);
     setActiveEvent(newEvt);
     return newEvt;
   };
 
-  const addGuest = (guestData: Omit<Guest, 'id' | 'code' | 'qrPayload' | 'status'>): Guest => {
-    const id = `g_${Date.now()}`;
-    const code = `${guestData.category === 'VIP' ? 'VIP' : 'REG'}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const qrPayload = `GH:${code}:${activeEvent.id}:sig_${Math.random().toString(36).substring(2, 9)}`;
-
-    const newGuest: Guest = {
-      ...guestData,
-      id,
-      code,
-      qrPayload,
-      status: 'out',
-    };
-
+  const addGuest = async (guestData: Omit<Guest, 'id' | 'code' | 'qrPayload' | 'status'>): Promise<Guest> => {
+    const newGuest = await api.createGuest({
+      eventId: activeEvent.id,
+      name: guestData.name,
+      phone: guestData.phone || '',
+      email: guestData.email || '',
+      category: guestData.category,
+      source: guestData.source || 'organizer'
+    });
     setGuests((prev) => [newGuest, ...prev]);
     return newGuest;
   };
 
-  const undoCheckin = (guestId: string) => {
-    setGuests((prev) =>
-      prev.map((g) => (g.id === guestId ? { ...g, status: 'out', checkinTime: null, checkedInBy: null } : g))
-    );
+  const undoCheckin = async (guestId: string) => {
+    await api.undoCheckin(guestId);
+    await refreshGuests();
   };
 
-  const removeGuest = (guestId: string) => {
-    setGuests((prev) => prev.filter((g) => g.id !== guestId));
+  const removeGuest = async (guestId: string) => {
+    await api.deleteGuest(guestId);
+    await refreshGuests();
   };
 
-  const bulkImportGuests = (rawCsv: string): number => {
+  const bulkImportGuests = async (rawCsv: string): Promise<number> => {
     const lines = rawCsv.split('\n').filter((l) => l.trim().length > 0);
     let addedCount = 0;
 
-    lines.forEach((line, idx) => {
-      if (idx === 0 && line.toLowerCase().includes('name')) return;
+    for (let idx = 0; idx < lines.length; idx++) {
+      const line = lines[idx];
+      if (idx === 0 && line.toLowerCase().includes('name')) continue;
       const parts = line.split(',').map((p) => p.trim());
       if (parts.length >= 2) {
         const name = parts[0];
@@ -473,7 +386,7 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const category = parts[2]?.toUpperCase() === 'VIP' ? 'VIP' : 'Regular';
         const organization = parts[3] || 'Corporate Guest';
 
-        addGuest({
+        await addGuest({
           name,
           email,
           phone: '+234 800 000 0000',
@@ -482,7 +395,7 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
         addedCount++;
       }
-    });
+    }
 
     return addedCount;
   };
@@ -490,72 +403,55 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const checkInGuest = async (
     guestId: string,
     agentName = 'Gate Sentinel',
-    method: 'qr' | 'manual_code' | 'walkin' = 'qr'
+    _method: 'qr' | 'manual_code' | 'walkin' = 'qr'
   ) => {
-    const target = guests.find((g) => g.id === guestId);
-    if (!target) return { result: 'error', message: 'Guest record not found.' };
+    try {
+      const res = await api.scanGuest({ eventId: activeEvent.id, qrPayloadOrCode: guestId, scannedBy: agentName });
+      
+      setCheckinTimeline((prev) => [...prev, new Date()]);
+      await refreshGuests();
 
-    if (target.status === 'in') {
       return {
-        result: 'duplicate',
-        message: `⚠️ DUPLICATE ENTRY BLOCKED: ${target.name} (${target.code}) already checked in! Pass reuse intercepted by Musa AI.`,
-        guest: target,
+        result: res.result,
+        message: res.message,
+        guest: res.guest
       };
+    } catch (e: any) {
+      return { result: 'error', message: e.message || 'Scan failed' };
     }
-
-    const updated: Guest = {
-      ...target,
-      status: 'in',
-      checkinTime: new Date(),
-      checkedInBy: agentName,
-    };
-
-    setGuests((prev) => prev.map((g) => (g.id === guestId ? updated : g)));
-    setCheckinTimeline((prev) => [...prev, new Date()]);
-
-    return {
-      result: 'success',
-      message: `✅ ACCESS GRANTED: Welcome ${updated.name} (${updated.category}). Turnstile unlocked via ${method.toUpperCase()}.`,
-      guest: updated,
-    };
   };
 
   const processQrScan = async (qrPayload: string) => {
-    const match = guests.find((g) => g.qrPayload === qrPayload || g.code === qrPayload);
-    if (!match) {
+    try {
+      const res = await api.scanGuest({ eventId: activeEvent.id, qrPayloadOrCode: qrPayload, scannedBy: 'Gate Camera Scanner' });
+      
+      if (res.result === 'success' || res.result === 'duplicate') {
+        setCheckinTimeline((prev) => [...prev, new Date()]);
+        await refreshGuests();
+      }
+      return res;
+    } catch (e: any) {
       return {
         result: 'invalid',
-        message: '❌ INVALID PASS: Cryptographic signature mismatch. Unrecognized QR payload.',
+        message: e.message || '❌ INVALID PASS: Error during scan.',
       };
     }
-
-    return checkInGuest(match.id, 'Gate Camera Scanner', 'qr');
   };
 
-  const createBookingRequest = (
+  const createBookingRequest = async (
     eventCentreId: string,
     eventName: string,
     requestedDate: string,
     guestEstimate: number,
     message?: string
-  ): Booking => {
-    const newB: Booking = {
-      id: `bk_${Date.now()}`,
-      eventCentreId,
-      organizerId: currentUser?.id || 'org_1',
-      organizerName: currentUser?.name || 'Musa Ibrahim',
-      eventName,
-      requestedDate,
-      guestEstimate,
-      status: 'requested',
-      message,
-      createdAt: new Date().toISOString(),
-    };
+  ): Promise<Booking> => {
+    const newB = await api.createBooking({ eventCentreId, eventName, requestedDate, guestEstimate, message });
     setBookings((prev) => [newB, ...prev]);
     return newB;
   };
 
-  const updateBookingStatus = (bookingId: string, status: 'accepted' | 'declined') => {
+  const updateBookingStatus = async (bookingId: string, status: 'accepted' | 'declined') => {
+    await api.updateBookingStatus(bookingId, status);
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status } : b)));
   };
 

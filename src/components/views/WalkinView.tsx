@@ -28,7 +28,7 @@ export const WalkinView: React.FC = () => {
       return;
     }
 
-    const g = addGuest({
+    const g = await addGuest({
       name: formData.name,
       phone: formData.phone || '+234 800 000 0000',
       category: formData.category,

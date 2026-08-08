@@ -36,7 +36,7 @@ export const PublicRegistrationView: React.FC = () => {
     if (!formData.name.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
-    const newGuest = addGuest({
+    const newGuest = await addGuest({
       name: formData.name,
       email: formData.email,
       phone: formData.phone || '+234 800 000 0000',

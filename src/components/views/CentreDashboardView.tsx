@@ -42,7 +42,7 @@ export const CentreDashboardView: React.FC = () => {
 
   const handleRegisterDelegatedGuest = async () => {
     if (!delegatedGuestName.trim()) return;
-    const newGuest = addGuest({
+    const newGuest = await addGuest({
       name: delegatedGuestName,
       phone: delegatedGuestPhone || '+234 800 000 0000',
       category: delegatedCategory,
@@ -60,7 +60,7 @@ export const CentreDashboardView: React.FC = () => {
 
   const handleDelegatedBulkImport = async () => {
     if (!delegatedBulkText.trim()) return;
-    const added = bulkImportGuests(delegatedBulkText);
+    const added = await bulkImportGuests(delegatedBulkText);
     setDelegatedBulkText('');
     setBulkImportStatus(
       `Delegated venue import added ${added} guest${added !== 1 ? 's' : ''}.`

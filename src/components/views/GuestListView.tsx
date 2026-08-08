@@ -20,7 +20,7 @@ export const GuestListView: React.FC = () => {
 
   const handleAddGuest = async () => {
     if (!addName.trim()) return;
-    addGuest({
+    await addGuest({
       name: addName,
       phone: addPhone || '+234 800 000 0000',
       category: addCategory,
@@ -32,7 +32,7 @@ export const GuestListView: React.FC = () => {
 
   const handleBulkImport = async () => {
     if (!bulkText.trim()) return;
-    const added = bulkImportGuests(bulkText);
+    const added = await bulkImportGuests(bulkText);
     setBulkText('');
     setImportStatusMsg(`Added ${added} guest pass${added !== 1 ? 'es' : ''}`);
     setTimeout(() => setImportStatusMsg(''), 2500);
