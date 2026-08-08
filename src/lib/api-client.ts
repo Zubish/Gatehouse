@@ -41,6 +41,7 @@ export const api = {
   // Auth
   register: (data: any) => fetchApi<{ token: string; user: User }>('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   login: (data: any) => fetchApi<{ token: string; user: User }>('/api/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  adminLogin: (password: string) => fetchApi<{ token: string; user: User }>('/api/auth/admin-login', { method: 'POST', body: JSON.stringify({ password }) }),
   getMe: () => fetchApi<{ user: User }>('/api/auth/me'),
 
   // Event Centres / Venues

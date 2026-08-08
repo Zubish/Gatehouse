@@ -44,6 +44,7 @@ export function App() {
     'terms-of-service',
     'security-sla',
     'demo',
+    'admin',
   ].includes(currentView);
 
   return (
