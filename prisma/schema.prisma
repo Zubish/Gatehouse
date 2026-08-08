@@ -14,6 +14,7 @@ model User {
   phone         String
   password      String?       // Hashed password with bcrypt
   role          String        // 'organizer' | 'centre' | 'staff' | 'guest' | 'admin'
+  status        String        @default("active") // 'active' | 'suspended'
   organization  String?
   organizerType String?
   country       String?       @default("Nigeria")
@@ -21,6 +22,7 @@ model User {
   eventCentres  EventCentre[]
   events        Event[]
   bookings      Booking[]
+  auditLogs     AuditLog[]
 }
 
 model EventCentre {
@@ -61,6 +63,7 @@ model Event {
   bookings              Booking[]
   delegations           Delegation[]
   checkinLogs           CheckinLog[]
+  auditLogs             AuditLog[]
 }
 
 model Booking {
@@ -100,7 +103,7 @@ model Guest {
   email       String?
   category    String       @default("Regular") // 'VIP' | 'Regular'
   source      String       @default("organizer") // 'organizer' | 'centre_import' | 'self_registered'
-  code        String
+  code        String       @unique
   qrPayload   String
   status      String       @default("out") // 'in' | 'out'
   checkinTime DateTime?
@@ -119,4 +122,17 @@ model CheckinLog {
   timestamp DateTime @default(now())
   method    String   // 'qr_scan' | 'manual_code' | 'search_match'
   result    String   // 'success' | 'duplicate' | 'invalid'
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  metadata  String?  // JSON stringified details
+  createdAt DateTime @default(now())
 }
