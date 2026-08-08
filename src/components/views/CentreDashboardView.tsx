@@ -42,30 +42,38 @@ export const CentreDashboardView: React.FC = () => {
 
   const handleRegisterDelegatedGuest = async () => {
     if (!delegatedGuestName.trim()) return;
-    const newGuest = await addGuest({
-      name: delegatedGuestName,
-      phone: delegatedGuestPhone || '+234 800 000 0000',
-      category: delegatedCategory,
-      organization: 'Delegated Venue Guest',
-    });
-    if (newGuest) {
-      setDelegatedSuccessMsg(
-        `Delegated VIP Guest registered: ${newGuest.name} (Pass: ${newGuest.code})`
-      );
-      setDelegatedGuestName('');
-      setDelegatedGuestPhone('');
-      setTimeout(() => setDelegatedSuccessMsg(''), 3000);
+    try {
+      const newGuest = await addGuest({
+        name: delegatedGuestName,
+        phone: delegatedGuestPhone || '+234 800 000 0000',
+        category: delegatedCategory,
+        organization: 'Delegated Venue Guest',
+      });
+      if (newGuest) {
+        setDelegatedSuccessMsg(
+          `Delegated VIP Guest registered: ${newGuest.name} (Pass: ${newGuest.code})`
+        );
+        setDelegatedGuestName('');
+        setDelegatedGuestPhone('');
+        setTimeout(() => setDelegatedSuccessMsg(''), 3000);
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const handleDelegatedBulkImport = async () => {
     if (!delegatedBulkText.trim()) return;
-    const added = await bulkImportGuests(delegatedBulkText);
-    setDelegatedBulkText('');
-    setBulkImportStatus(
-      `Delegated venue import added ${added} guest${added !== 1 ? 's' : ''}.`
-    );
-    setTimeout(() => setBulkImportStatus(''), 3000);
+    try {
+      const added = await bulkImportGuests(delegatedBulkText);
+      setDelegatedBulkText('');
+      setBulkImportStatus(
+        `Delegated venue import added ${added} guest${added !== 1 ? 's' : ''}.`
+      );
+      setTimeout(() => setBulkImportStatus(''), 3000);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -241,13 +249,25 @@ export const CentreDashboardView: React.FC = () => {
                     {b.status === 'requested' && (
                       <div className="flex gap-2 pt-2 border-t border-border/40">
                         <button
-                          onClick={() => updateBookingStatus(b.id, 'accepted')}
+                          onClick={async () => {
+                            try {
+                              await updateBookingStatus(b.id, 'accepted');
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
                           className="flex-1 py-2 rounded-xl bg-[#38ef7d] text-navy-900 text-xs font-mono font-bold hover:bg-[#38ef7d]/90 cursor-pointer flex items-center justify-center gap-1"
                         >
                           <Check className="h-4 w-4" /> Approve Booking
                         </button>
                         <button
-                          onClick={() => updateBookingStatus(b.id, 'declined')}
+                          onClick={async () => {
+                            try {
+                              await updateBookingStatus(b.id, 'declined');
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
                           className="flex-1 py-2 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-xs font-mono font-bold hover:bg-destructive/20 cursor-pointer flex items-center justify-center gap-1"
                         >
                           <X className="h-4 w-4" /> Decline

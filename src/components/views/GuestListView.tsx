@@ -257,21 +257,39 @@ export const GuestListView: React.FC = () => {
                     <div className="flex items-center justify-end gap-2">
                       {g.status === 'in' ? (
                         <button
-                          onClick={() => undoCheckin(g.id)}
+                          onClick={async () => {
+                            try {
+                              await undoCheckin(g.id);
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
                           className="px-3 py-1.5 rounded-xl border border-border/80 bg-navy-900 hover:bg-card text-muted-foreground hover:text-foreground text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1"
                         >
                           <Undo className="h-3 w-3" /> Undo
                         </button>
                       ) : (
                         <button
-                          onClick={() => checkInGuest(g.id, 'Host Manager', 'manual_code')}
+                          onClick={async () => {
+                            try {
+                              await checkInGuest(g.id, 'Host Manager', 'manual_code');
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
                           className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-[11px] font-mono font-bold hover:bg-primary/90 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
                         >
                           <CheckCircle2 className="h-3 w-3" /> Check In
                         </button>
                       )}
                       <button
-                        onClick={() => removeGuest(g.id)}
+                        onClick={async () => {
+                          try {
+                            await removeGuest(g.id);
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
                         className="p-1.5 rounded-xl text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                         title="Remove Pass"
                       >
