@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { useGatehouse } from '../../context/GatehouseContext';
-import type { ViewRoute, UserRole } from '../../types';
-import { ChevronDown, Play } from 'lucide-react';
+import type { ViewRoute } from '../../types';
+// import { ChevronDown, Play } from 'lucide-react';
 
 interface TopbarProps {
   currentView: ViewRoute;
@@ -9,14 +9,14 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
-  const { currentUser, loginUser, logoutUser } = useGatehouse();
-  const [isDemoDropdownOpen, setIsDemoDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { currentUser, logoutUser } = useGatehouse();
+  // const [isDemoDropdownOpen, setIsDemoDropdownOpen] = useState(false);
+  // const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Show public landing page navbar for landing page AND public venue directory
   const isPublicMarketingPage = ['landing', 'login', 'register', 'centres'].includes(currentView);
 
-  // Close dropdown when clicking outside
+  /*
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -26,6 +26,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  */
 
   const scrollToSection = (sectionId: string) => {
     if (currentView !== 'landing') {
@@ -40,6 +41,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
     }
   };
 
+  /*
   const handleDemoLogin = async (targetRole: UserRole) => {
     setIsDemoDropdownOpen(false);
     const demoEmail = targetRole === 'organizer' ? 'demo@gatehouse.app' : 'venue@gatehouse.app';
@@ -48,6 +50,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
       onNavigate(targetRole === 'centre' ? 'centre-dash' : 'dashboard');
     }
   };
+  */
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
@@ -205,6 +208,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
         <div className="flex shrink-0 items-center gap-3">
           
           {/* VIEW DEMO DROPDOWN MENU */}
+          {/*
           <div className="relative" ref={dropdownRef}>
             <button
               type="button"
@@ -248,6 +252,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
               </div>
             )}
           </div>
+          */}
 
           {currentUser ? (
             <div className="flex items-center gap-3">

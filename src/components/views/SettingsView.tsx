@@ -13,7 +13,7 @@ export const SettingsView: React.FC = () => {
   // Notification Config State
   const [enableSms, setEnableSms] = useState(true);
   const [enableEmail, setEnableEmail] = useState(true);
-  const [testPhone, setTestPhone] = useState('08031234567');
+  const [testPhone, setTestPhone] = useState('');
   const [smsTestMsg, setSmsTestMsg] = useState('');
 
   const handleSave = async () => {

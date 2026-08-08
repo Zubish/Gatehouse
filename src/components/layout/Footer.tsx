@@ -8,17 +8,17 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
-  const { currentUser, loginUser } = useGatehouse();
+  const { currentUser } = useGatehouse();
 
   const handleNav = (v: ViewRoute) => {
     if (onNavigate) onNavigate(v);
   };
 
-  // Feature Click Handler: Automatically logs into Demo Sandbox if not currently signed in!
-  const handleFeatureClick = async (targetView: ViewRoute, preferredRole: 'organizer' | 'centre' = 'organizer') => {
+  // Feature Click Handler
+  const handleFeatureClick = async (targetView: ViewRoute) => {
     if (!currentUser) {
-      const demoEmail = preferredRole === 'centre' ? 'venue@gatehouse.app' : 'demo@gatehouse.app';
-      await loginUser(demoEmail, 'password123');
+      handleNav('login');
+      return;
     }
     handleNav(targetView);
   };
@@ -62,27 +62,27 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </h4>
             <ul className="space-y-2 text-xs font-medium text-muted-foreground">
               <li>
-                <button onClick={() => handleFeatureClick('dashboard', 'organizer')} className="hover:text-foreground transition-colors cursor-pointer text-left">
+                <button onClick={() => handleFeatureClick('dashboard')} className="hover:text-foreground transition-colors cursor-pointer text-left">
                   Command Center Dashboard
                 </button>
               </li>
               <li>
-                <button onClick={() => handleFeatureClick('checkin', 'organizer')} className="hover:text-foreground transition-colors cursor-pointer text-left">
+                <button onClick={() => handleFeatureClick('checkin')} className="hover:text-foreground transition-colors cursor-pointer text-left">
                   Musa AI Gate Sentinel
                 </button>
               </li>
               <li>
-                <button onClick={() => handleFeatureClick('checkin', 'organizer')} className="hover:text-foreground transition-colors cursor-pointer text-left">
+                <button onClick={() => handleFeatureClick('checkin')} className="hover:text-foreground transition-colors cursor-pointer text-left">
                   2.5s HMAC QR Scanner
                 </button>
               </li>
               <li>
-                <button onClick={() => handleFeatureClick('centre-dash', 'centre')} className="hover:text-foreground transition-colors cursor-pointer text-left">
+                <button onClick={() => handleFeatureClick('centre-dash')} className="hover:text-foreground transition-colors cursor-pointer text-left">
                   Multi-Hall Venue Portal
                 </button>
               </li>
               <li>
-                <button onClick={() => handleFeatureClick('public-reg', 'organizer')} className="hover:text-foreground transition-colors cursor-pointer text-left">
+                <button onClick={() => handleFeatureClick('public-reg')} className="hover:text-foreground transition-colors cursor-pointer text-left">
                   Public Link Token Engine
                 </button>
               </li>

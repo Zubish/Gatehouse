@@ -8,8 +8,8 @@ interface GatehouseContextType {
   currentUser: User | null;
   userRole: UserRole | null;
   activeTab: ViewTab;
-  setActiveTab: (tab: ViewTab) => void;
-  loginUser: (email: string, password?: string) => Promise<boolean>;
+  setActiveTab: (tab: ViewTab, pushHistory?: boolean) => void;
+  loginUser: (email: string, password?: string) => Promise<{ success: boolean; role?: UserRole }>;
   adminLoginPassword: (password: string) => Promise<boolean>;
   registerUser: (
     name: string,
@@ -25,7 +25,7 @@ interface GatehouseContextType {
       venueCapacity?: string;
       country?: string;
     }
-  ) => Promise<boolean>;
+  ) => Promise<{ success: boolean; role?: UserRole }>;
   logoutUser: () => void;
   guests: Guest[];
   addGuest: (guest: Omit<Guest, 'id' | 'code' | 'qrPayload' | 'status'>) => Promise<Guest>;
@@ -145,7 +145,7 @@ const PUBLIC_MARKETING_VIEWS: ViewTab[] = [
   'privacy-policy',
   'terms-of-service',
   'security-sla',
-  'demo',
+  // 'demo',
 ];
 
 export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -159,7 +159,7 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [userRole, setUserRole] = useState<UserRole | null>(null);
 
   const [guests, setGuests] = useState<Guest[]>(INITIAL_GUESTS);
-  const [events, setEvents] = useState<EventItem[]>([DEFAULT_EVENT]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [activeEvent, setActiveEvent] = useState<EventItem>(DEFAULT_EVENT);
   const [eventCentres] = useState<EventCentre[]>(INITIAL_CENTRES);
   const [selectedCentre, setSelectedCentre] = useState<EventCentre | null>(INITIAL_CENTRES[0]);
@@ -171,7 +171,9 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const refreshGuests = useCallback(async (eventId?: string) => {
     try {
-      const g = await api.getGuests(eventId || activeEvent.id);
+      const eId = eventId || activeEvent.id;
+      if (!eId) return;
+      const g = await api.getGuests(eId);
       setGuests(g);
     } catch (e) {
       console.error('Failed to fetch guests', e);
@@ -182,16 +184,24 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (currentUser) {
       const loadData = async () => {
         try {
-          const [g, e, b] = await Promise.all([
-            api.getGuests(activeEvent.id),
+          const [e, b] = await Promise.all([
             api.getEvents(),
             api.getBookings()
           ]);
-          setGuests(g);
-          setEvents(e.length > 0 ? e : [DEFAULT_EVENT]);
-          if (e.length > 0 && !e.some(ev => ev.id === activeEvent.id)) {
-             setActiveEvent(e[0]);
+          setEvents(e.length > 0 ? e : []);
+          
+          let currentEvent = activeEvent;
+          if (e.length > 0 && !e.some(ev => ev.id === currentEvent.id)) {
+             currentEvent = e[0];
+             setActiveEvent(currentEvent);
+          } else if (e.length === 0) {
+             currentEvent = DEFAULT_EVENT;
+             setActiveEvent(currentEvent);
           }
+          
+          const g = await api.getGuests(currentEvent.id);
+          setGuests(g);
+          
           setBookings(b);
         } catch (err) {
           console.error('Failed loading data:', err);
@@ -263,14 +273,14 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     initAuth();
   }, [authToken]);
 
-  const loginUser = async (email: string, password = ''): Promise<boolean> => {
+  const loginUser = async (email: string, password = ''): Promise<{ success: boolean; role?: UserRole }> => {
     try {
       const data = await api.login({ email, password });
       localStorage.setItem('gatehouse_auth_token', data.token);
       setAuthToken(data.token);
       setCurrentUser(data.user);
       setUserRole(data.user.role);
-      return true;
+      return { success: true, role: data.user.role };
     } catch (e) {
       console.error('API login unavailable:', e);
     }
@@ -300,10 +310,10 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setAuthToken(mockToken);
       setCurrentUser(mockUser);
       setUserRole(mockUser.role);
-      return true;
+      return { success: true, role: mockUser.role };
     }
 
-    return false;
+    return { success: false };
   };
 
   const adminLoginPassword = async (password: string): Promise<boolean> => {
@@ -353,7 +363,7 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       venueCapacity?: string;
       country?: string;
     }
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; role?: UserRole }> => {
     try {
       const payload = { name, email, password, role, ...extra };
       const data = await api.register(payload);
@@ -361,10 +371,10 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setAuthToken(data.token);
       setCurrentUser(data.user);
       setUserRole(data.user.role);
-      return true;
+      return { success: true, role: data.user.role };
     } catch (err) {
       console.warn('Backend API registration failed.');
-      return false;
+      return { success: false };
     }
   };
 

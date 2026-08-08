@@ -48,18 +48,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
     }
 
     if (authMode === 'login') {
-      const success = await loginUser(email, password);
-      if (success) {
+      const res = await loginUser(email, password);
+      if (res.success) {
         setStatusMsg({
           type: 'ok',
           text: 'Authentication successful! Redirecting to workspace…',
         });
 
         setTimeout(() => {
-          let userRole = role;
-          if (email.toLowerCase().includes('venue') || email.toLowerCase().includes('centre')) {
-            userRole = 'centre';
-          }
+          const userRole = res.role || role;
           setActiveTab(userRole === 'centre' ? 'centre-dash' : 'dashboard');
         }, 600);
       } else {
@@ -69,7 +66,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
         });
       }
     } else {
-      const success = await registerUser(
+      const res = await registerUser(
         fullName || 'New User',
         email,
         password,
@@ -84,13 +81,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
           country,
         }
       );
-      if (success) {
+      if (res.success) {
         setStatusMsg({
           type: 'ok',
           text: 'Account created successfully! Welcome to Gatehouse Enterprise.',
         });
         setTimeout(() => {
-          setActiveTab(role === 'centre' ? 'centre-dash' : 'dashboard');
+          const userRole = res.role || role;
+          setActiveTab(userRole === 'centre' ? 'centre-dash' : 'dashboard');
         }, 600);
       } else {
         setStatusMsg({

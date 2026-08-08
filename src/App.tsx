@@ -16,7 +16,7 @@ import { AdminPortalView } from './components/views/AdminPortalView';
 import { PrivacyPolicyView } from './components/views/PrivacyPolicyView';
 import { TermsOfServiceView } from './components/views/TermsOfServiceView';
 import { SecuritySlaView } from './components/views/SecuritySlaView';
-import { DemoView } from './components/views/DemoView';
+// import { DemoView } from './components/views/DemoView';
 import type { ViewRoute } from './types';
 
 export function App() {
@@ -43,7 +43,7 @@ export function App() {
     'privacy-policy',
     'terms-of-service',
     'security-sla',
-    'demo',
+    // 'demo',
     'admin',
   ].includes(currentView);
 
@@ -81,7 +81,7 @@ export function App() {
           {currentView === 'admin' && <AdminPortalView />}
 
           {/* DEDICATED NIGERIAN LAW LEGAL PAGES & DEMO SANDBOX */}
-          {currentView === 'demo' && <DemoView onNavigate={handleNavigate} />}
+          {/* {currentView === 'demo' && <DemoView onNavigate={handleNavigate} />} */}
           {currentView === 'privacy-policy' && (
             <PrivacyPolicyView onNavigate={handleNavigate} />
           )}
