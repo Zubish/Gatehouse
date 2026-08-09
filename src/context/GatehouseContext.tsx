@@ -417,6 +417,14 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const bulkImportGuests = async (rawCsv: string): Promise<number> => {
+    try {
+      const res = await api.bulkImportGuests({ eventId: activeEvent.id, csvData: rawCsv });
+      await refreshGuests();
+      return res.added;
+    } catch (e) {
+      console.warn('API bulk import fallback:', e);
+    }
+
     const lines = rawCsv.split('\n').filter((l) => l.trim().length > 0);
     let addedCount = 0;
 

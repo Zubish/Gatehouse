@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "server": "ts-node server/index.ts",
+    "server": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "prisma:push": "prisma db push",
     "prisma:seed": "ts-node prisma/seed.ts",

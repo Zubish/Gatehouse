@@ -711,6 +711,7 @@ app.post("/api/guests/bulk", async (req, res) => {
             id: guestId,
             eventId,
             name,
+            phone: "+234 800 000 0000",
             email: email || "",
             category: guestCategory,
             source: "organizer",
@@ -827,7 +828,7 @@ app.get("/api/checkin-logs", async (req, res) => {
     
     const logs = await prisma.checkinLog.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { timestamp: "desc" },
     });
     
     const guestIds = logs.map((l: any) => l.guestId);
