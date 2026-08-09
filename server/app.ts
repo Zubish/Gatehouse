@@ -362,7 +362,7 @@ app.get("/api/auth/me", requireAuth, async (req: AuthRequest, res: Response) => 
 
 // ---------------- EVENT CENTRES & VENUES ----------------
 
-app.get("/api/centres", async (req, res) => {
+app.get("/api/centres", requireAuth, async (req, res) => {
   try {
     const centres = await prisma.eventCentre.findMany({
       orderBy: { createdAt: "desc" },
@@ -375,7 +375,7 @@ app.get("/api/centres", async (req, res) => {
 
 // ---------------- EVENTS ----------------
 
-app.get("/api/events", async (req, res) => {
+app.get("/api/events", requireAuth, async (req, res) => {
   try {
     const events = await prisma.event.findMany({
       orderBy: { createdAt: "desc" },
@@ -413,7 +413,7 @@ app.post("/api/events", requireAuth, async (req: AuthRequest, res: Response) => 
 
 // ---------------- BOOKINGS ----------------
 
-app.get("/api/bookings", async (req, res) => {
+app.get("/api/bookings", requireAuth, async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({
       orderBy: { createdAt: "desc" },
@@ -490,7 +490,7 @@ app.patch("/api/bookings/:id", requireAuth, async (req: AuthRequest, res: Respon
 
 // ---------------- GUESTS & ATOMIC CHECK-IN ----------------
 
-app.get("/api/guests", async (req, res) => {
+app.get("/api/guests", requireAuth, async (req, res) => {
   try {
     const { eventId } = req.query;
     const where = eventId ? { eventId: String(eventId) } : {};
@@ -504,7 +504,7 @@ app.get("/api/guests", async (req, res) => {
   }
 });
 
-app.post("/api/guests", async (req, res) => {
+app.post("/api/guests", requireAuth, async (req, res) => {
   try {
     const { eventId, name, phone, email, category, source } = req.body;
 
@@ -544,7 +544,7 @@ app.post("/api/guests", async (req, res) => {
 });
 
 // ATOMIC CONCURRENCY-SAFE QR SCAN & CHECK-IN TRANSACTION
-app.post("/api/guests/scan", async (req, res) => {
+app.post("/api/guests/scan", requireAuth, async (req, res) => {
   try {
     const { eventId, qrPayloadOrCode, scannedBy } = req.body;
     const raw = String(qrPayloadOrCode).trim();
@@ -643,7 +643,7 @@ app.post("/api/guests/scan", async (req, res) => {
   }
 });
 
-app.delete("/api/guests/:id", async (req, res) => {
+app.delete("/api/guests/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.guest.delete({ where: { id } });
@@ -653,7 +653,7 @@ app.delete("/api/guests/:id", async (req, res) => {
   }
 });
 
-app.patch("/api/guests/:id/undo", async (req, res) => {
+app.patch("/api/guests/:id/undo", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const updated = await prisma.guest.update({
@@ -667,7 +667,7 @@ app.patch("/api/guests/:id/undo", async (req, res) => {
 });
 
 // ---------------- BULK CSV IMPORT ----------------
-app.post("/api/guests/bulk", async (req, res) => {
+app.post("/api/guests/bulk", requireAuth, async (req, res) => {
   try {
     const { eventId, csvData } = req.body;
     if (!eventId || !csvData) return res.status(400).json({ error: "Missing eventId or csvData" });
@@ -801,7 +801,7 @@ app.post("/api/public/events/:registrationToken/register", async (req, res) => {
 
 
 // ---------------- EVENT STATS ----------------
-app.get("/api/events/:eventId/stats", async (req, res) => {
+app.get("/api/events/:eventId/stats", requireAuth, async (req, res) => {
   try {
     const { eventId } = req.params;
     const totalGuests = await prisma.guest.count({ where: { eventId } });
@@ -821,7 +821,7 @@ app.get("/api/events/:eventId/stats", async (req, res) => {
 });
 
 // ---------------- CHECKIN LOGS ----------------
-app.get("/api/checkin-logs", async (req, res) => {
+app.get("/api/checkin-logs", requireAuth, async (req, res) => {
   try {
     const { eventId } = req.query;
     const where = eventId ? { eventId: String(eventId) } : {};
@@ -848,7 +848,7 @@ app.get("/api/checkin-logs", async (req, res) => {
 
 // ---------------- ADMIN DATA PURGE (FRESH CLEAN SYSTEM) ----------------
 
-app.post("/api/admin/purge-data", async (req, res) => {
+app.post("/api/admin/purge-data", requireAuth, requireRole(["admin"]), async (req, res) => {
   try {
     await prisma.checkinLog.deleteMany({});
     await prisma.guest.deleteMany({});

@@ -210,6 +210,35 @@ export const PublicRegistrationView: React.FC = () => {
                     {registeredGuest.category} PASS
                   </span>
                 </div>
+                <div className="flex justify-center mt-2">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold border ${
+                    registeredGuest.status === 'in' ? 'bg-primary/20 text-primary border-primary/30' :
+                    registeredGuest.status === 'out' ? 'bg-[#38ef7d]/20 text-[#38ef7d] border-[#38ef7d]/30' :
+                    'bg-destructive/20 text-destructive border-destructive/30'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full animate-pulse ${
+                      registeredGuest.status === 'in' ? 'bg-primary' :
+                      registeredGuest.status === 'out' ? 'bg-[#38ef7d]' :
+                      'bg-destructive'
+                    }`} />
+                    {registeredGuest.status === 'in' ? 'Checked-In' : registeredGuest.status === 'out' ? 'Active' : 'Invalid'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Pass Actions */}
+              <div className="flex flex-col gap-2 pt-2">
+                <button className="w-full py-2 rounded-xl bg-primary/20 text-primary text-xs font-mono font-bold hover:bg-primary/30 transition-colors border border-primary/30">
+                  📥 Download Pass
+                </button>
+                <div className="flex gap-2">
+                  <button className="flex-1 py-2 rounded-xl bg-secondary text-foreground text-xs font-mono font-bold hover:bg-secondary/80 transition-colors border border-border/50">
+                    📱 Save to Phone
+                  </button>
+                  <button className="flex-1 py-2 rounded-xl bg-navy-700 text-foreground text-xs font-mono font-bold hover:bg-navy-600 transition-colors border border-border/50">
+                    🔗 Share Invitation
+                  </button>
+                </div>
               </div>
             </div>
 

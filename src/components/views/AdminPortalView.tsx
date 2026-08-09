@@ -18,6 +18,7 @@ import {
   Trash2,
   AlertTriangle,
   Radio,
+  ArrowRight,
 } from 'lucide-react';
 import { api } from '../../lib/api-client';
 
@@ -238,6 +239,37 @@ export const AdminPortalView: React.FC = () => {
         </div>
       </div>
 
+      {/* URGENT ACTION CENTER */}
+      <div className="rounded-3xl border border-destructive/40 bg-destructive/5 p-6 space-y-4 mb-6">
+        <div className="flex items-center gap-2 border-b border-destructive/20 pb-3">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          <h3 className="font-heading text-lg font-bold text-foreground">Urgent Action Center</h3>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div className="p-4 rounded-2xl bg-card border border-border/60 hover:border-destructive/50 transition-colors cursor-pointer">
+            <div className="text-destructive font-bold text-lg">3</div>
+            <div className="text-xs font-mono text-muted-foreground mt-1">Pending Venue Verifications</div>
+            <button className="mt-3 text-[10px] font-mono font-bold uppercase text-destructive flex items-center gap-1 hover:underline">
+              Review Now <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="p-4 rounded-2xl bg-card border border-border/60 hover:border-amber-500/50 transition-colors cursor-pointer">
+            <div className="text-amber-500 font-bold text-lg">12</div>
+            <div className="text-xs font-mono text-muted-foreground mt-1">Security Alerts (Last 24h)</div>
+            <button className="mt-3 text-[10px] font-mono font-bold uppercase text-amber-500 flex items-center gap-1 hover:underline">
+              Investigate <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="p-4 rounded-2xl bg-card border border-border/60 hover:border-[#5cbdb9]/50 transition-colors cursor-pointer">
+            <div className="text-[#5cbdb9] font-bold text-lg">8</div>
+            <div className="text-xs font-mono text-muted-foreground mt-1">Failed QR Scans</div>
+            <button className="mt-3 text-[10px] font-mono font-bold uppercase text-[#5cbdb9] flex items-center gap-1 hover:underline">
+              View Logs <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* MASTER METRICS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
@@ -261,7 +293,7 @@ export const AdminPortalView: React.FC = () => {
 
         <div className="rounded-3xl border border-[#38ef7d]/40 bg-card/60 p-6 space-y-2 card-glow">
           <div className="flex items-center justify-between text-[#38ef7d]">
-            <span className="text-xs font-mono uppercase font-bold">Issued Guest Passes</span>
+            <span className="text-xs font-mono uppercase font-bold">Issued QR Passes</span>
             <Users className="h-4 w-4 text-[#38ef7d]" />
           </div>
           <div className="font-heading text-3xl font-extrabold text-[#38ef7d]">{guests.length}</div>
