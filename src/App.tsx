@@ -11,17 +11,20 @@ import { WalkinView } from './components/views/WalkinView';
 import { EventCentresView } from './components/views/EventCentresView';
 import { CentreDashboardView } from './components/views/CentreDashboardView';
 import { PublicRegistrationView } from './components/views/PublicRegistrationView';
+import { MyPassesView } from './components/views/MyPassesView';
 import { SettingsView } from './components/views/SettingsView';
 import { AdminPortalView } from './components/views/AdminPortalView';
 import { PrivacyPolicyView } from './components/views/PrivacyPolicyView';
 import { TermsOfServiceView } from './components/views/TermsOfServiceView';
 import { SecuritySlaView } from './components/views/SecuritySlaView';
-// import { DemoView } from './components/views/DemoView';
+import { MusaAssistantDrawer } from './components/views/MusaAssistantDrawer';
+import { Bot } from 'lucide-react';
 import type { ViewRoute } from './types';
 
 export function App() {
   const { activeTab, setActiveTab } = useGatehouse();
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [isMusaOpen, setIsMusaOpen] = useState(false);
 
   const handleNavigate = (view: ViewRoute) => {
     if (view === 'login') {
@@ -35,29 +38,29 @@ export function App() {
 
   const currentView = activeTab;
 
-  // Pages that use the full-width layout with Topbar & Footer (Public Marketing, Legal & Demo Sandbox Pages)
+  // Pages that use the full-width layout with Topbar & Footer
   const isPublicFullWidthPage = [
     'landing',
     'login',
     'register',
+    'public-reg',
+    'my-passes',
     'privacy-policy',
     'terms-of-service',
     'security-sla',
-    // 'demo',
     'admin',
   ].includes(currentView);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
-      {/* TOPBAR NAVIGATION — RENDERED ONLY ON PUBLIC MARKETING & LEGAL PAGES */}
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans relative">
+      {/* TOPBAR NAVIGATION */}
       {isPublicFullWidthPage && (
         <Topbar currentView={currentView} onNavigate={handleNavigate} />
       )}
 
       {/* APP BODY LAYOUT */}
       <div className="flex-1 flex w-full">
-        
-        {/* LEFT SIDEBAR NAVIGATION (For Control Room App Views Only — Moves all the way up to top) */}
+        {/* LEFT SIDEBAR NAVIGATION */}
         {!isPublicFullWidthPage && (
           <Sidebar currentView={currentView} onNavigate={handleNavigate} />
         )}
@@ -77,11 +80,10 @@ export function App() {
           {currentView === 'centres' && <EventCentresView onNavigate={handleNavigate} />}
           {currentView === 'centre-dash' && <CentreDashboardView />}
           {currentView === 'public-reg' && <PublicRegistrationView />}
+          {currentView === 'my-passes' && <MyPassesView />}
           {currentView === 'settings' && <SettingsView />}
           {currentView === 'admin' && <AdminPortalView />}
 
-          {/* DEDICATED NIGERIAN LAW LEGAL PAGES & DEMO SANDBOX */}
-          {/* {currentView === 'demo' && <DemoView onNavigate={handleNavigate} />} */}
           {currentView === 'privacy-policy' && (
             <PrivacyPolicyView onNavigate={handleNavigate} />
           )}
@@ -94,7 +96,20 @@ export function App() {
         </main>
       </div>
 
-      {/* FOOTER - RENDERED ONLY ON LANDING AND AUTH/LEGAL PAGES, REMOVED FROM ALL CONTROL ROOM VIEWS */}
+      {/* FLOATING MUSA AI ASSISTANT BUTTON */}
+      <button
+        onClick={() => setIsMusaOpen(!isMusaOpen)}
+        className="fixed bottom-6 right-6 z-40 bg-indigo-600 hover:bg-indigo-500 text-white p-3.5 rounded-full shadow-2xl shadow-indigo-600/50 flex items-center space-x-2 transition-all group"
+        title="Open Musa AI Gate Assistant"
+      >
+        <Bot className="w-6 h-6 group-hover:scale-110 transition-transform" />
+        <span className="hidden sm:inline font-bold text-xs pr-1">Musa AI</span>
+      </button>
+
+      {/* MUSA AI ASSISTANT DRAWER */}
+      <MusaAssistantDrawer isOpen={isMusaOpen} onClose={() => setIsMusaOpen(false)} />
+
+      {/* FOOTER */}
       {isPublicFullWidthPage && !['landing', 'privacy-policy', 'terms-of-service', 'security-sla'].includes(currentView) && (
         <footer className="border-t border-border/40 py-6 text-center text-xs font-mono text-muted-foreground">
           <div className="text-muted-foreground">

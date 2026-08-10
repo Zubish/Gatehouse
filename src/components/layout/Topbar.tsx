@@ -102,6 +102,16 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
               Venues Directory
             </button>
             <button
+              onClick={() => onNavigate('my-passes')}
+              className={`transition-colors cursor-pointer ${
+                currentView === 'my-passes'
+                  ? 'text-[#5cbdb9] font-bold'
+                  : 'hover:text-foreground'
+              }`}
+            >
+              My Passes
+            </button>
+            <button
               onClick={() => scrollToSection('calculator-section')}
               className="transition-colors hover:text-foreground cursor-pointer"
             >

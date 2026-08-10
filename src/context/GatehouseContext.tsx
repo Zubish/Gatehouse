@@ -124,6 +124,7 @@ const TAB_PATH_MAP: Record<ViewTab, string> = {
   centres: '/centres',
   'centre-dash': '/centre-dash',
   'public-reg': '/public-reg',
+  'my-passes': '/my-passes',
   settings: '/settings',
   admin: '/admin',
   'privacy-policy': '/privacy-policy',

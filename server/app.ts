@@ -643,6 +643,33 @@ app.post("/api/guests/scan", requireAuth, async (req, res) => {
   }
 });
 
+// Guest Pass Recovery / Wallet Lookup by Email or Phone
+app.get("/api/guests/lookup", async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query || typeof query !== "string") {
+      return res.status(400).json({ error: "Query parameter required" });
+    }
+    const q = query.trim().toLowerCase();
+    const guests = await prisma.guest.findMany({
+      where: {
+        OR: [
+          { email: { equals: q, mode: "insensitive" } },
+          { phone: { contains: q } },
+          { code: { equals: q, mode: "insensitive" } },
+        ],
+      },
+      include: {
+        event: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(guests);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.delete("/api/guests/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;

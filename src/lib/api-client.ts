@@ -61,6 +61,7 @@ export const api = {
   createGuest: (data: any) => fetchApi<Guest>('/api/guests', { method: 'POST', body: JSON.stringify(data) }),
   bulkImportGuests: (data: { eventId: string; csvData: string }) => fetchApi<{ added: number; errors: string[] }>('/api/guests/bulk', { method: 'POST', body: JSON.stringify(data) }),
   scanGuest: (data: { eventId?: string; qrPayloadOrCode: string; scannedBy?: string }) => fetchApi<{ success: boolean; result: string; message: string; guest?: Guest }>('/api/guests/scan', { method: 'POST', body: JSON.stringify(data) }),
+  lookupGuests: (query: string) => fetchApi<Guest[]>(`/api/guests/lookup?query=${encodeURIComponent(query)}`),
   undoCheckin: (guestId: string) => fetchApi<Guest>(`/api/guests/${guestId}/undo`, { method: 'PATCH' }),
   deleteGuest: (guestId: string) => fetchApi<{ success: boolean }>(`/api/guests/${guestId}`, { method: 'DELETE' }),
 

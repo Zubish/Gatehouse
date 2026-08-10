@@ -125,6 +125,7 @@ export type ViewRoute =
   | 'centres'
   | 'centre-dash'
   | 'public-reg'
+  | 'my-passes'
   | 'settings'
   | 'admin'
   | 'privacy-policy'
