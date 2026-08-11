@@ -12,7 +12,6 @@ import {
   Settings,
   ShieldAlert,
   LogOut,
-  Home,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -164,17 +163,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
               </button>
             );
           })}
-
-          <button
-            onClick={() => onNavigate('landing')}
-            title={isCollapsed ? 'Public Landing Page' : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-card/60 transition-all cursor-pointer mt-4 ${
-              isCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <Home className="h-4.5 w-4.5 shrink-0 text-muted-foreground" />
-            {!isCollapsed && <span className="truncate">Public Landing Page</span>}
-          </button>
         </nav>
 
       </div>

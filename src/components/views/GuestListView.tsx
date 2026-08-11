@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useGatehouse } from '../../context/GatehouseContext';
-import { Users, UserPlus, FileSpreadsheet, Search, CheckCircle2, XCircle, Trash2, Undo, Filter } from 'lucide-react';
+import { Users, UserPlus, FileSpreadsheet, Search, CheckCircle2, XCircle, Trash2, Undo, Filter, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export const GuestListView: React.FC = () => {
   const { guests, addGuest, checkInGuest, undoCheckin, removeGuest, bulkImportGuests, exportCsvReport } = useGatehouse();
@@ -13,6 +14,7 @@ export const GuestListView: React.FC = () => {
   // Bulk Import State
   const [bulkText, setBulkText] = useState('');
   const [importStatusMsg, setImportStatusMsg] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,7 +37,32 @@ export const GuestListView: React.FC = () => {
     const added = await bulkImportGuests(bulkText);
     setBulkText('');
     setImportStatusMsg(`Added ${added} guest pass${added !== 1 ? 'es' : ''}`);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setTimeout(() => setImportStatusMsg(''), 2500);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Convert to CSV and set as bulkText
+        const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
+        setBulkText(csvOutput);
+      } catch (err) {
+        console.error(err);
+        setImportStatusMsg('Error reading file');
+        setTimeout(() => setImportStatusMsg(''), 2500);
+      }
+    };
+    reader.readAsBinaryString(file);
   };
 
   // Filtered guest list sorted alphabetically
@@ -156,6 +183,17 @@ export const GuestListView: React.FC = () => {
               onChange={(e) => setBulkText(e.target.value)}
               className="w-full rounded-xl border border-border/80 bg-navy-900 px-3.5 py-2.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
             />
+
+            <div className="flex items-center gap-2">
+              <Upload className="h-4 w-4 text-muted-foreground" />
+              <input 
+                type="file" 
+                accept=".csv, .xlsx, .xls"
+                onChange={handleFileUpload}
+                ref={fileInputRef}
+                className="block w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#5cbdb9]/10 file:text-[#5cbdb9] hover:file:bg-[#5cbdb9]/20 file:cursor-pointer cursor-pointer"
+              />
+            </div>
 
             <div className="flex items-center justify-between">
               <button

@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useGatehouse } from '../../context/GatehouseContext';
 import { QRCodePass } from './QRCodePass';
 import type { Guest } from '../../types';
 import { QrCode, Camera, Usb, ShieldCheck, CheckCircle2, AlertTriangle, Lock, Video, StopCircle } from 'lucide-react';
+import jsQR from 'jsqr';
 
 function fmtTime(d: Date): string {
   return d.toLocaleTimeString([], {
@@ -24,6 +25,7 @@ export const CheckinView: React.FC = () => {
   const [isLiveWebcam, setIsLiveWebcam] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const scanningPaused = useRef(false);
 
   // Hardware State
   const [turnstileMsg, setTurnstileMsg] = useState('');
@@ -93,6 +95,73 @@ export const CheckinView: React.FC = () => {
     }
     setIsLiveWebcam(false);
   };
+
+  const handleQrDetected = async (codeData: string) => {
+    if (scanningPaused.current) return;
+    scanningPaused.current = true;
+
+    // Audio feedback
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    } catch(e) {}
+
+    const res = await processQrScan(codeData);
+    const match = guests.find((g) => g.qrPayload === codeData || g.code === codeData);
+    
+    if (match) {
+      setSelectedGuest(match);
+      if (res.result === 'success') {
+         await checkInGuest(match.id, 'Gate Sentinel Camera', 'qr');
+         setTurnstileMsg(`🔓 Turnstile Barrier Unlocked! (Relay Signal Sent for ${match.name})`);
+         setTimeout(() => setTurnstileMsg(''), 3500);
+      }
+    }
+
+    setStatusBanner({
+      show: true,
+      type: res.result === 'success' ? 'ok' : res.result === 'duplicate' ? 'warn' : 'err',
+      message: res.message,
+    });
+
+    setTimeout(() => {
+      scanningPaused.current = false;
+    }, 2500);
+  };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    const canvas = document.createElement('canvas');
+    if (isLiveWebcam) {
+      interval = setInterval(() => {
+        if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+          const video = videoRef.current;
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+              inversionAttempts: 'dontInvert',
+            });
+            if (code) {
+              handleQrDetected(code.data);
+            }
+          }
+        }
+      }, 300);
+    }
+    return () => clearInterval(interval);
+  }, [isLiveWebcam, guests, processQrScan, checkInGuest]);
 
   const handleSimulateCameraScan = async () => {
     setCameraSimulating(true);
