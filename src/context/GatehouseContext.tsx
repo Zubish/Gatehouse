@@ -213,13 +213,21 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [currentUser, activeEvent.id]);
 
   const changeTab = useCallback((newTab: ViewTab, pushHistory = true) => {
-    if (
-      (currentUser?.email?.includes('demo') || currentUser?.email?.includes('venue')) &&
-      PUBLIC_MARKETING_VIEWS.includes(newTab)
-    ) {
-      localStorage.removeItem('gatehouse_auth_token');
-      setAuthToken(null);
-      setCurrentUser(null);
+    if (currentUser) {
+      if (newTab === 'landing' || (newTab === 'admin' && currentUser.role !== 'admin')) {
+        localStorage.removeItem('gatehouse_auth_token');
+        setAuthToken(null);
+        setCurrentUser(null);
+        setUserRole(null);
+      } else if (
+        (currentUser.email?.includes('demo') || currentUser.email?.includes('venue')) &&
+        PUBLIC_MARKETING_VIEWS.includes(newTab)
+      ) {
+        localStorage.removeItem('gatehouse_auth_token');
+        setAuthToken(null);
+        setCurrentUser(null);
+        setUserRole(null);
+      }
     }
 
     setActiveTabState(newTab);
@@ -231,13 +239,21 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [currentUser]);
 
   useEffect(() => {
-    if (
-      (currentUser?.email?.includes('demo') || currentUser?.email?.includes('venue')) &&
-      PUBLIC_MARKETING_VIEWS.includes(activeTab)
-    ) {
-      localStorage.removeItem('gatehouse_auth_token');
-      setAuthToken(null);
-      setCurrentUser(null);
+    if (currentUser) {
+      if (activeTab === 'landing' || (activeTab === 'admin' && currentUser.role !== 'admin')) {
+        localStorage.removeItem('gatehouse_auth_token');
+        setAuthToken(null);
+        setCurrentUser(null);
+        setUserRole(null);
+      } else if (
+        (currentUser.email?.includes('demo') || currentUser.email?.includes('venue')) &&
+        PUBLIC_MARKETING_VIEWS.includes(activeTab)
+      ) {
+        localStorage.removeItem('gatehouse_auth_token');
+        setAuthToken(null);
+        setCurrentUser(null);
+        setUserRole(null);
+      }
     }
   }, [activeTab, currentUser]);
 

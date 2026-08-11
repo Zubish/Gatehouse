@@ -168,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
       </div>
 
       {/* FOOTER USER ACCOUNT BAR */}
-      <div className="pt-3 border-t border-border/40 space-y-3">
+      <div className="sticky bottom-0 z-20 bg-navy-900/95 backdrop-blur-xl border-t border-border/40 pt-3 pb-3 mt-auto space-y-3">
         <div className={`p-2.5 rounded-2xl bg-card/60 border border-border/60 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isCollapsed && (
             <div className="truncate pr-2">
@@ -183,7 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
           <button
             onClick={logoutUser}
             title="Sign Out"
-            className="p-2 rounded-xl text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-colors cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
           </button>

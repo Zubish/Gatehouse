@@ -7,7 +7,7 @@ function fmtTime(d: Date): string {
 }
 
 export const DashboardView: React.FC = () => {
-  const { guests, checkinTimeline, activeEvent, exportCsvReport, setActiveTab } = useGatehouse();
+  const { guests = [], checkinTimeline = [], activeEvent, exportCsvReport, setActiveTab } = useGatehouse();
 
   const [feedFilter, setFeedFilter] = useState<'all' | 'VIP' | 'Regular'>('all');
 
@@ -51,10 +51,10 @@ export const DashboardView: React.FC = () => {
             LIVE WORKSPACE DASHBOARD
           </div>
           <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground">
-            {activeEvent.name}
+            {activeEvent?.name || 'Loading Workspace...'}
           </h2>
           <p className="text-xs font-mono text-muted-foreground">
-            🗓️ Date: {activeEvent.date} • ⏰ Start Time: {activeEvent.startTime} • 👥 Venue Cap: {activeEvent.capacity.toLocaleString()}
+            🗓️ Date: {activeEvent?.date || 'TBD'} • ⏰ Start Time: {activeEvent?.startTime || 'TBD'} • 👥 Venue Cap: {activeEvent?.capacity?.toLocaleString() || 'N/A'}
           </p>
         </div>
 

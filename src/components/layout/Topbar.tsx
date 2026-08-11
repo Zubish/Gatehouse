@@ -61,12 +61,8 @@ export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
           onClick={() => onNavigate('landing')}
           className="flex items-center gap-3 cursor-pointer group"
         >
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center transition-transform group-hover:scale-105">
-            <img src="/logo.png" alt="Gatehouse Shield Logo" className="h-full w-full object-contain rounded-lg" />
-          </div>
-          <span className="font-heading text-lg font-bold text-[#e8edf3] tracking-tight flex items-center">
-            <img src="/logo.png" alt="G" className="h-5 w-5 object-contain inline-block -mr-0.5" />
-            <span>atehouse</span>
+          <span className="font-heading text-lg font-bold text-[#e8edf3] tracking-tight flex items-center transition-transform group-hover:scale-105">
+            Gatehouse
           </span>
         </div>
 

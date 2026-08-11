@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGatehouse } from './context/GatehouseContext';
 import { Topbar } from './components/layout/Topbar';
 import { Sidebar } from './components/layout/Sidebar';
@@ -22,9 +22,17 @@ import { Bot } from 'lucide-react';
 import type { ViewRoute } from './types';
 
 export function App() {
-  const { activeTab, setActiveTab } = useGatehouse();
+  const { activeTab, setActiveTab, currentUser, logoutUser } = useGatehouse();
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isMusaOpen, setIsMusaOpen] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      if (activeTab === 'landing' || (activeTab === 'admin' && currentUser.role !== 'admin')) {
+        logoutUser();
+      }
+    }
+  }, [activeTab, currentUser, logoutUser]);
 
   const handleNavigate = (view: ViewRoute) => {
     if (view === 'login') {

@@ -126,8 +126,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode = 'login' }) => {
                 <ShieldCheck className="h-6 w-6 text-[#0f1b3d]" />
               </div>
               <span className="font-heading text-2xl font-extrabold tracking-tight bg-gradient-to-r from-[#e8edf3] via-[#e8edf3] to-[#94a3b8] bg-clip-text text-transparent flex items-center">
-                <img src="/logo.png" alt="G" className="h-7 w-7 object-contain inline-block -mr-0.5" />
-                <span>atehouse</span>
+                Gatehouse
               </span>
             </div>
 
