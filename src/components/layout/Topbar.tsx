@@ -1,7 +1,7 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { useGatehouse } from '../../context/GatehouseContext';
 import type { ViewRoute } from '../../types';
-// import { ChevronDown, Play } from 'lucide-react';
 
 interface TopbarProps {
   currentView: ViewRoute;
@@ -10,11 +10,10 @@ interface TopbarProps {
 
 export const Topbar: React.FC<TopbarProps> = ({ currentView, onNavigate }) => {
   const { currentUser, logoutUser } = useGatehouse();
-  // const [isDemoDropdownOpen, setIsDemoDropdownOpen] = useState(false);
-  // const dropdownRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
-  // Show public landing page navbar for landing page AND public venue directory
-  const isPublicMarketingPage = ['landing', 'login', 'register', 'centres'].includes(currentView);
+  const path = location.pathname;
+  const isPublicMarketingPage = ['/', '/login', '/register', '/centres', '/public-reg', '/my-passes'].includes(path);
 
   /*
   useEffect(() => {

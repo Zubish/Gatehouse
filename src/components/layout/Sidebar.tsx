@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useGatehouse } from '../../context/GatehouseContext';
 import type { ViewRoute } from '../../types';
 import {
@@ -23,6 +24,8 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
   const { currentUser, logoutUser } = useGatehouse();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('gatehouse_sidebar_collapsed') === 'true';
   });
@@ -144,11 +147,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
         <nav className="space-y-1">
           {visibleItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentView === item.id;
+            const itemPath = `/${item.id}`;
+            const isActive = location.pathname === itemPath || currentView === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => onNavigate(item.id)}
+                onClick={() => {
+                  if (onNavigate) onNavigate(item.id);
+                  navigate(itemPath);
+                }}
                 title={isCollapsed ? item.label : undefined}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-mono font-bold transition-all cursor-pointer ${
                   isCollapsed ? 'justify-center' : ''

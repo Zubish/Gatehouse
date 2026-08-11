@@ -6,9 +6,10 @@ export type ViewTab = ViewRoute;
 
 interface GatehouseContextType {
   currentUser: User | null;
+  loading: boolean;
   userRole: UserRole | null;
   activeTab: ViewTab;
-  setActiveTab: (tab: ViewTab, pushHistory?: boolean) => void;
+  setActiveTab: (tab: ViewTab) => void;
   loginUser: (email: string, password?: string) => Promise<{ success: boolean; role?: UserRole }>;
   adminLoginPassword: (password: string) => Promise<boolean>;
   registerUser: (
@@ -113,48 +114,8 @@ const INITIAL_CENTRES: EventCentre[] = [
   },
 ];
 
-const TAB_PATH_MAP: Record<ViewTab, string> = {
-  landing: '/',
-  login: '/login',
-  register: '/register',
-  dashboard: '/dashboard',
-  guests: '/guests',
-  checkin: '/checkin',
-  walkin: '/walkin',
-  centres: '/centres',
-  'centre-dash': '/centre-dash',
-  'public-reg': '/public-reg',
-  'my-passes': '/my-passes',
-  settings: '/settings',
-  admin: '/admin',
-  'privacy-policy': '/privacy-policy',
-  'terms-of-service': '/terms-of-service',
-  'security-sla': '/security-sla',
-  demo: '/demo',
-};
-
-const ROUTE_PATH_MAP: Record<string, ViewTab> = Object.entries(TAB_PATH_MAP).reduce((acc, [tab, path]) => {
-  acc[path] = tab as ViewTab;
-  return acc;
-}, {} as Record<string, ViewTab>);
-
-const PUBLIC_MARKETING_VIEWS: ViewTab[] = [
-  'landing',
-  'login',
-  'register',
-  'centres',
-  'privacy-policy',
-  'terms-of-service',
-  'security-sla',
-  // 'demo',
-];
-
 export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeTab, setActiveTabState] = useState<ViewTab>(() => {
-    const path = window.location.pathname;
-    return ROUTE_PATH_MAP[path] || 'landing';
-  });
-
+  const [activeTab, setActiveTab] = useState<ViewTab>('landing');
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('gatehouse_auth_token'));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
@@ -211,66 +172,6 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       loadData();
     }
   }, [currentUser, activeEvent.id]);
-
-  const changeTab = useCallback((newTab: ViewTab, pushHistory = true) => {
-    if (currentUser) {
-      if (newTab === 'landing' || (newTab === 'admin' && currentUser.role !== 'admin')) {
-        localStorage.removeItem('gatehouse_auth_token');
-        setAuthToken(null);
-        setCurrentUser(null);
-        setUserRole(null);
-      } else if (
-        (currentUser.email?.includes('demo') || currentUser.email?.includes('venue')) &&
-        PUBLIC_MARKETING_VIEWS.includes(newTab)
-      ) {
-        localStorage.removeItem('gatehouse_auth_token');
-        setAuthToken(null);
-        setCurrentUser(null);
-        setUserRole(null);
-      }
-    }
-
-    setActiveTabState(newTab);
-    const path = TAB_PATH_MAP[newTab] || '/';
-
-    if (pushHistory && window.location.pathname !== path) {
-      window.history.pushState({ tab: newTab }, '', path);
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (currentUser) {
-      if (activeTab === 'landing' || (activeTab === 'admin' && currentUser.role !== 'admin')) {
-        localStorage.removeItem('gatehouse_auth_token');
-        setAuthToken(null);
-        setCurrentUser(null);
-        setUserRole(null);
-      } else if (
-        (currentUser.email?.includes('demo') || currentUser.email?.includes('venue')) &&
-        PUBLIC_MARKETING_VIEWS.includes(activeTab)
-      ) {
-        localStorage.removeItem('gatehouse_auth_token');
-        setAuthToken(null);
-        setCurrentUser(null);
-        setUserRole(null);
-      }
-    }
-  }, [activeTab, currentUser]);
-
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      if (event.state && event.state.tab) {
-        changeTab(event.state.tab, false);
-      } else {
-        const path = window.location.pathname;
-        const matchedTab = ROUTE_PATH_MAP[path] || 'landing';
-        changeTab(matchedTab, false);
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [changeTab]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -400,7 +301,7 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setAuthToken(null);
     setCurrentUser(null);
     setUserRole(null);
-    changeTab('landing');
+    setActiveTab('landing');
   };
 
   const createEvent = async (name: string, date: string, startTime: string, capacity: number): Promise<EventItem> => {
@@ -549,9 +450,10 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     <GatehouseContext.Provider
       value={{
         currentUser,
+        loading,
         userRole,
         activeTab,
-        setActiveTab: changeTab,
+        setActiveTab,
         loginUser,
         adminLoginPassword,
         registerUser,
