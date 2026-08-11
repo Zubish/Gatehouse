@@ -1,0 +1,3 @@
+This is a sample documentation file for the Gatehouse project.
+It contains placeholder text for testing the FAISS indexing process.
+Feel free to replace it with actual documentation later.
