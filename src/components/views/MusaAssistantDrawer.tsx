@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Bot, Send, X, ShieldCheck, Key } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Bot, Send, X, ShieldCheck, Key, RefreshCw, Sparkles, FileSpreadsheet, QrCode, Trash2 } from 'lucide-react';
 import { useGatehouse } from '../../context/GatehouseContext';
+import { generateMusaResponse } from '../../lib/musaAiEngine';
 
 interface Message {
   id: string;
@@ -10,16 +11,27 @@ interface Message {
 }
 
 export const MusaAssistantDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { activeEvent } = useGatehouse();
+  const { activeEvent, currentUser, guests } = useGatehouse();
   const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const checkedInCount = guests ? guests.filter((g) => g.status === 'in').length : 0;
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       sender: 'musa',
-      text: `Hello! I am Musa, your Gatehouse AI Security & Access Assistant for ${activeEvent.name}. How can I assist you today?`,
+      text: `Hello ${currentUser?.name || 'there'}! 👋 I am **Musa**, your intelligent Gatehouse AI Assistant for **${
+        activeEvent?.name || 'Gatehouse Event'
+      }**.\n\nAsk me anything about gate check-ins, pass recovery, bulk Excel uploads, turnstile hardware, or venue analytics!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
   if (!isOpen) return null;
 
@@ -36,23 +48,16 @@ export const MusaAssistantDrawer: React.FC<{ isOpen: boolean; onClose: () => voi
 
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInput('');
+    setIsTyping(true);
 
-    // Musa AI Response Logic based on Gatehouse Blueprints
+    // Dynamic AI Response Generation
     setTimeout(() => {
-      let responseText = '';
-      const q = query.toLowerCase();
-
-      if (q.includes('pass') || q.includes('recover') || q.includes('code') || q.includes('lost')) {
-        responseText = `To recover your pass, visit the "My Passes" section or type your email in the search bar. Every pass is secured with an HMAC-SHA256 token signed by the Gatehouse server.`;
-      } else if (q.includes('gate') || q.includes('scan') || q.includes('turnstile') || q.includes('entry')) {
-        responseText = `Gate access is operating in real-time mode. Simply present your digital QR code at Turnstile 01. Anti-passback prevents duplicate pass re-use.`;
-      } else if (q.includes('venue') || q.includes('location') || q.includes('address') || q.includes('directions')) {
-        responseText = `The event "${activeEvent.name}" is scheduled at Eko Convention Center, Victoria Island, Lagos. Gates open at ${activeEvent.startTime}.`;
-      } else if (q.includes('admin') || q.includes('security') || q.includes('role')) {
-        responseText = `Gatehouse enforces strict RBAC (Role-Based Access Control) with immutable audit logs for all check-in transactions.`;
-      } else {
-        responseText = `I have logged your request. For immediate gate access or pass verification, present your QR pass at the entrance or contact event support.`;
-      }
+      const responseText = generateMusaResponse(query, {
+        activeEvent,
+        currentUser,
+        guestsCount: guests?.length || 0,
+        checkedInCount,
+      });
 
       const musaMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -62,71 +67,138 @@ export const MusaAssistantDrawer: React.FC<{ isOpen: boolean; onClose: () => voi
       };
 
       setMessages((prev) => [...prev, musaMsg]);
-    }, 600);
+      setIsTyping(false);
+    }, 450);
+  };
+
+  const handleClearChat = () => {
+    setMessages([
+      {
+        id: Date.now().toString(),
+        sender: 'musa',
+        text: `Chat cleared! How can I assist you with **${activeEvent?.name || 'Gatehouse'}** today?`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  };
+
+  // Helper to format response text with bolding and bullet points cleanly
+  const renderFormattedText = (text: string) => {
+    const lines = text.split('\n');
+    return lines.map((line, idx) => {
+      // Process bold syntax **text**
+      const parts = line.split(/(\*\*.*?\*\*)/g);
+      const formattedLine = parts.map((part, pIdx) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return (
+            <strong key={pIdx} className="font-bold text-white">
+              {part.slice(2, -2)}
+            </strong>
+          );
+        }
+        return part;
+      });
+
+      return (
+        <React.Fragment key={idx}>
+          {formattedLine}
+          {idx < lines.length - 1 && <br />}
+        </React.Fragment>
+      );
+    });
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-slate-950/95 backdrop-blur-2xl border-l border-slate-800 shadow-2xl flex flex-col font-sans text-white">
+    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-slate-950/98 backdrop-blur-2xl border-l border-slate-800/80 shadow-2xl flex flex-col font-sans text-white transition-all animate-in slide-in-from-right duration-300">
       {/* Drawer Header */}
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+      <div className="p-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/80">
         <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400">
-            <Bot className="w-5 h-5" />
+          <div className="p-2 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 shadow-inner">
+            <Bot className="w-5 h-5 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="font-bold text-sm text-white">Musa AI Assistant</h3>
+              <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
+                Musa AI Assistant <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              </h3>
+            </div>
+            <div className="flex items-center space-x-2 text-[11px] text-slate-400">
               <span className="flex h-2 w-2 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
+              <span className="truncate max-w-[180px] font-mono text-[10px] text-emerald-400 font-semibold">
+                {activeEvent?.name || 'Active Session'}
+              </span>
             </div>
-            <span className="text-[11px] text-slate-400">Gatehouse Event & Security Operations</span>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={handleClearChat}
+            title="Clear Chat History"
+            className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-800/60 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
-      {/* Suggested Quick Prompts */}
-      <div className="p-3 border-b border-slate-800/60 bg-slate-950/40 flex items-center space-x-2 overflow-x-auto text-xs scrollbar-none">
+      {/* Quick Prompt Suggestions */}
+      <div className="p-3 border-b border-slate-800/60 bg-slate-950/60 flex items-center space-x-2 overflow-x-auto text-[11px] scrollbar-none">
         <button
-          onClick={() => handleSend('How do I scan my pass at the gate?')}
-          className="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 hover:border-indigo-500/50 hover:text-indigo-300 whitespace-nowrap transition-all flex items-center space-x-1"
+          onClick={() => handleSend('How many guests checked in?')}
+          className="px-2.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 hover:border-indigo-500/50 hover:text-indigo-300 whitespace-nowrap transition-all flex items-center space-x-1.5 shadow-sm"
         >
           <ShieldCheck className="w-3 h-3 text-indigo-400" />
-          <span>Gate Scan Info</span>
+          <span>Live Check-In Stats</span>
         </button>
         <button
-          onClick={() => handleSend('How do I recover my lost pass?')}
-          className="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 hover:border-indigo-500/50 hover:text-indigo-300 whitespace-nowrap transition-all flex items-center space-x-1"
+          onClick={() => handleSend('How to recover lost pass?')}
+          className="px-2.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 hover:border-emerald-500/50 hover:text-emerald-300 whitespace-nowrap transition-all flex items-center space-x-1.5 shadow-sm"
         >
           <Key className="w-3 h-3 text-emerald-400" />
           <span>Pass Recovery</span>
         </button>
+        <button
+          onClick={() => handleSend('How do I import Excel guest lists?')}
+          className="px-2.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 hover:border-blue-500/50 hover:text-blue-300 whitespace-nowrap transition-all flex items-center space-x-1.5 shadow-sm"
+        >
+          <FileSpreadsheet className="w-3 h-3 text-blue-400" />
+          <span>Excel Import</span>
+        </button>
+        <button
+          onClick={() => handleSend('How does gate scanning work?')}
+          className="px-2.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 hover:border-purple-500/50 hover:text-purple-300 whitespace-nowrap transition-all flex items-center space-x-1.5 shadow-sm"
+        >
+          <QrCode className="w-3 h-3 text-purple-400" />
+          <span>Gate Scanner</span>
+        </button>
       </div>
 
-      {/* Messages Container */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+      {/* Messages Scroll Area */}
+      <div className="flex-1 p-4 overflow-y-auto space-y-4 font-mono text-xs">
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed ${
+              className={`max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed ${
                 msg.sender === 'user'
-                  ? 'bg-indigo-600 text-white rounded-br-none shadow-lg shadow-indigo-600/20'
-                  : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-bl-none shadow-md'
+                  ? 'bg-indigo-600 text-white rounded-br-none shadow-lg shadow-indigo-600/20 font-sans'
+                  : 'bg-slate-900/90 border border-slate-800 text-slate-200 rounded-bl-none shadow-md'
               }`}
             >
-              {msg.text}
+              {renderFormattedText(msg.text)}
               <div
-                className={`text-[9px] mt-1.5 text-right ${
+                className={`text-[9px] mt-2 text-right ${
                   msg.sender === 'user' ? 'text-indigo-200' : 'text-slate-500'
                 }`}
               >
@@ -135,10 +207,20 @@ export const MusaAssistantDrawer: React.FC<{ isOpen: boolean; onClose: () => voi
             </div>
           </div>
         ))}
+
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-slate-900/90 border border-slate-800 text-slate-400 p-3 rounded-2xl rounded-bl-none flex items-center space-x-2 text-xs">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+              <span>Musa AI is reasoning...</span>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Form */}
-      <div className="p-4 border-t border-slate-800 bg-slate-900/80">
+      {/* Chat Input Bar */}
+      <div className="p-4 border-t border-slate-800/80 bg-slate-900/90">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -148,14 +230,15 @@ export const MusaAssistantDrawer: React.FC<{ isOpen: boolean; onClose: () => voi
         >
           <input
             type="text"
-            placeholder="Ask Musa about gate access, passes..."
+            placeholder="Ask Musa anything about Gatehouse..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all"
+            className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all font-sans"
           />
           <button
             type="submit"
-            className="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/20"
+            disabled={!input.trim()}
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white p-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </button>
