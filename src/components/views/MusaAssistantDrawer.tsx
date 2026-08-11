@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, X, ShieldCheck, Key, RefreshCw, Sparkles, FileSpreadsheet, QrCode, Trash2 } from 'lucide-react';
 import { useGatehouse } from '../../context/GatehouseContext';
-import { generateMusaResponse } from '../../lib/musaAiEngine';
+import { askMusaAI } from '../../lib/musaAiEngine';
 
 interface Message {
   id: string;
@@ -22,9 +22,9 @@ export const MusaAssistantDrawer: React.FC<{ isOpen: boolean; onClose: () => voi
     {
       id: '1',
       sender: 'musa',
-      text: `Hello ${currentUser?.name || 'there'}! 👋 I am **Musa**, your intelligent Gatehouse AI Assistant for **${
+      text: `Hello ${currentUser?.name || 'there'}! 👋 I am **Musa**, your AI Assistant powered by **Gemini AI** for **${
         activeEvent?.name || 'Gatehouse Event'
-      }**.\n\nAsk me anything about gate check-ins, pass recovery, bulk Excel uploads, turnstile hardware, or venue analytics!`,
+      }**.\n\nAsk me any question — about gate security, pass recovery, logistics, or general event operations!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -35,7 +35,7 @@ export const MusaAssistantDrawer: React.FC<{ isOpen: boolean; onClose: () => voi
 
   if (!isOpen) return null;
 
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     const query = textToSend || input;
     if (!query.trim()) return;
 
@@ -50,9 +50,8 @@ export const MusaAssistantDrawer: React.FC<{ isOpen: boolean; onClose: () => voi
     if (!textToSend) setInput('');
     setIsTyping(true);
 
-    // Dynamic AI Response Generation
-    setTimeout(() => {
-      const responseText = generateMusaResponse(query, {
+    try {
+      const responseText = await askMusaAI(query, {
         activeEvent,
         currentUser,
         guestsCount: guests?.length || 0,
@@ -67,8 +66,11 @@ export const MusaAssistantDrawer: React.FC<{ isOpen: boolean; onClose: () => voi
       };
 
       setMessages((prev) => [...prev, musaMsg]);
+    } catch (err) {
+      console.error('Musa chat error:', err);
+    } finally {
       setIsTyping(false);
-    }, 450);
+    }
   };
 
   const handleClearChat = () => {

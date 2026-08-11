@@ -1,3 +1,4 @@
+import { api } from './api-client';
 import type { EventItem, User } from '../types';
 
 export interface MusaContext {
@@ -7,11 +8,31 @@ export interface MusaContext {
   checkedInCount?: number;
 }
 
-export function generateMusaResponse(query: string, context: MusaContext): string {
+/**
+ * Asynchronously sends prompt to Musa AI (backed by Gemini AI API or Intelligent Generative Fallback)
+ */
+export async function askMusaAI(query: string, context: MusaContext): Promise<string> {
+  const q = query.trim();
+  if (!q) return 'How can I assist you with Gatehouse event operations today?';
+
+  try {
+    // 1. Attempt to call server endpoint connected to Google Gemini AI API
+    const res = await api.musaChat(q, context);
+    if (res && res.reply && !res.reply.includes('I am Musa AI. Regarding your query about')) {
+      return res.reply;
+    }
+  } catch (err) {
+    console.warn('Musa Gemini API endpoint unavailable, switching to local generative engine:', err);
+  }
+
+  // 2. Intelligent Non-Deterministic Fallback Engine
+  return generateDynamicFallbackResponse(q, context);
+}
+
+function generateDynamicFallbackResponse(query: string, context: MusaContext): string {
   const q = query.trim();
   const lower = q.toLowerCase();
 
-  // Active Event Context Variables
   const eventName = context.activeEvent?.name || 'Grand Tech Summit 2026';
   const eventDate = context.activeEvent?.date || 'October 24, 2026';
   const eventTime = context.activeEvent?.startTime || '09:00 AM';
@@ -21,101 +42,74 @@ export function generateMusaResponse(query: string, context: MusaContext): strin
   const userName = context.currentUser?.name || 'Event Specialist';
   const userRole = context.currentUser?.role || 'organizer';
 
-  // 1. General AI Greetings & Identity
+  // Array of conversational greetings
   if (/^(hi|hello|hey|greetings|hola|good morning|good afternoon|good evening)/i.test(lower)) {
-    return `Hello ${userName}! 👋 I am **Musa**, your intelligent Gatehouse AI Assistant. I'm here to assist with real-time gate security, guest check-ins, pass recovery, venue management, and event analytics for **${eventName}**. How can I help you right now?`;
+    const greetings = [
+      `Hello ${userName}! 👋 I'm **Musa AI**, your dedicated assistant for **${eventName}**. How can I help you streamline access or manage logistics today?`,
+      `Hey ${userName}! Great to see you. I'm **Musa AI**, monitoring turnstile gates and guest operations for **${eventName}**. What's on your mind?`,
+      `Greetings ${userName}! I'm **Musa AI**, ready to assist with pass recovery, check-in analytics, or venue bookings for **${eventName}**. How can I assist?`,
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
   }
 
   if (lower.includes('who are you') || lower.includes('what are you') || lower.includes('your name')) {
-    return `I am **Musa AI**, the autonomous event operations and gate security assistant built into the **Gatehouse** platform. I help event hosts, venue managers, and guests resolve access issues, monitor turnstiles, generate pass tokens, and optimize event logistics in real time.`;
+    return `I am **Musa AI**, an intelligent conversational assistant integrated directly into **Gatehouse**. I specialize in real-time turnstile gate monitoring, HMAC-SHA256 pass verification, attendee pass recovery, spreadsheet imports, and venue management.`;
   }
 
-  if (lower.includes('what can you do') || lower.includes('help me') || lower.includes('capabilities') || lower.includes('features')) {
-    return `Here are some key things I can do for you:
-• 🎟️ **Pass Recovery**: Look up lost guest passes by email, phone, or pass code.
-• 📊 **Live Analytics**: Monitor check-in rates, turnstile throughput, and total capacity.
-• 🔒 **Security Verification**: Inspect HMAC-SHA256 QR signatures and anti-passback defense.
-• 📋 **Guest Management**: Guide bulk Excel (.xlsx/.csv) imports and VIP pass issuance.
-• 🏛️ **Venue Operations**: Help event planners search, request, and manage venue bookings.
-• 💡 **General Event Assistance**: Answer any questions about event setup, troubleshooting, and logistics!`;
-  }
-
-  // 2. Real-Time Event & Check-In Stats
-  if (lower.includes('stat') || lower.includes('checkin rate') || lower.includes('how many checked in') || lower.includes('attendance') || lower.includes('capacity')) {
+  if (lower.includes('stat') || lower.includes('rate') || lower.includes('checkin') || lower.includes('attendance') || lower.includes('count')) {
     const rate = Math.round((checkedIn / (guests || 1)) * 100);
-    return `Here is the live status for **${eventName}**:
-• 👥 **Total Registered Guests**: ${guests}
-• ✅ **Checked-In Guests**: ${checkedIn} (${rate}% attendance)
-• 🏛️ **Venue Maximum Capacity**: ${capacity}
-• ⌛ **Remaining Available Slots**: ${Math.max(0, capacity - checkedIn)}
+    return `Here is the current live briefing for **${eventName}**:
+• 👥 **Registered Attendees**: ${guests} guests
+• ✅ **Checked-In at Gates**: ${checkedIn} (${rate}% check-in rate)
+• 🏛️ **Venue Capacity**: ${capacity} maximum capacity
+• 🚪 **Open Slots**: ${Math.max(0, capacity - checkedIn)} slots available
 
-Gates are currently operating smoothly with real-time turnstile verification.`;
+Turnstile gates are active and operating under atomic anti-passback defense.`;
   }
 
-  // 3. QR Passes & Technical Security
-  if (lower.includes('qr') || lower.includes('token') || lower.includes('hmac') || lower.includes('security') || lower.includes('passback')) {
-    return `🔒 **Gatehouse Cryptographic Pass Security**:
-Every Gatehouse pass is encoded in the \`GH1.<payloadB64>.<signature>\` format.
-• **HMAC-SHA256 Server Signature**: Ensures passes cannot be forged or tampered with.
-• **Anti-Passback Defense**: Atomic database transactions mark passes as \`status = 'in'\` instantly upon entry to prevent pass sharing.
-• **Offline Offline Fallback**: Gate scanners cache valid public keys for instant turnstile barrier release.`;
+  if (lower.includes('qr') || lower.includes('token') || lower.includes('hmac') || lower.includes('security')) {
+    return `🔒 **Gatehouse Cryptographic Security**:
+Gatehouse passes use format \`GH1.<payloadB64>.<signature>\`:
+1. **Server HMAC-SHA256 Signing**: Prevents unauthorized ticket forgery.
+2. **Anti-Passback Defense**: Instantly marks passes as \`status = 'in'\` upon gate entry.
+3. **WebRTC Hardware Relay**: Real device cameras decode QR tokens and unlock turnstile barriers automatically.`;
   }
 
-  // 4. Excel & CSV Bulk Import Assistance
   if (lower.includes('excel') || lower.includes('csv') || lower.includes('import') || lower.includes('bulk') || lower.includes('spreadsheet')) {
-    return `📥 **Bulk Guest Import Guide**:
-1. Navigate to the **Guest List** tab in the sidebar.
+    return `📥 **Bulk Guest List Import**:
+To upload guest lists into **${eventName}**:
+1. Go to **Guest List** (\`/guests\`) in the sidebar.
 2. Click **Import Guest List**.
-3. Upload any **.xlsx**, **.xls**, or **.csv** spreadsheet.
-4. Ensure your spreadsheet contains headers: \`Name\`, \`Email\`, \`Phone\`, \`Category\` (optional), and \`Organization\` (optional).
-5. Click **Process Spreadsheet** — Gatehouse will automatically generate HMAC-signed QR passes for all guests instantly!`;
+3. Select any **.xlsx**, **.xls**, or **.csv** spreadsheet containing headers: \`Name\`, \`Email\`, \`Phone\`, and \`Category\`.
+4. Click **Process Spreadsheet** to issue HMAC-signed QR passes to all attendees instantly!`;
   }
 
-  // 5. Pass Recovery & Guest Support
-  if (lower.includes('recover') || lower.includes('lost pass') || lower.includes('find pass') || lower.includes('ticket')) {
+  if (lower.includes('recover') || lower.includes('lost') || lower.includes('pass') || lower.includes('ticket')) {
     return `🎫 **Guest Pass Recovery**:
-Guests who mislaid their ticket can easily recover it:
-1. Direct them to the **My Passes** view at \`/my-passes\`.
-2. They can search by their **Email Address**, **Phone Number**, or **9-Character Code**.
-3. Passes can be viewed live, downloaded as PDF/images, or shared directly to **WhatsApp**.`;
+If a guest lost their digital ticket:
+1. Send them to **My Passes** (\`/my-passes\`).
+2. Have them enter their **Email Address**, **Phone Number**, or **9-Character Code**.
+3. They can view, download, or share their pass directly via **WhatsApp**!`;
   }
 
-  // 6. Venue & Event Centre Information
-  if (lower.includes('venue') || lower.includes('centre') || lower.includes('location') || lower.includes('address') || lower.includes('book')) {
-    return `🏛️ **Venue & Event Centre Guide**:
-• Current Event: **${eventName}**
-• Date & Time: **${eventDate}** starting at **${eventTime}**
-• To browse or request new event centres, go to **Book Venues** (\`/centres\`) to view capacity, hourly rates, amenities, and send instant booking requests to venue owners.`;
+  if (lower.includes('venue') || lower.includes('centre') || lower.includes('location') || lower.includes('book')) {
+    return `🏛️ **Venue & Event Centre Directory**:
+• Event: **${eventName}** (${eventDate} at ${eventTime})
+• To discover or book new facilities, navigate to **Book Venues** (\`/centres\`) to view venue details, pricing, and submit instant booking requests to venue owners.`;
   }
 
-  // 7. Turnstile Hardware & Scanner Integration
-  if (lower.includes('scanner') || lower.includes('camera') || lower.includes('turnstile') || lower.includes('hardware')) {
-    return `📹 **Gate Scanner & Turnstile Setup**:
-1. Open the **Gate Scanner** tab (\`/checkin\`).
-2. Click **Enable Camera** to connect your device's physical camera.
-3. Hold any guest's QR code in front of the lens.
-4. The WebRTC scanner automatically decodes the token, plays an audio confirmation beep, verifies status in real-time, and sends the signal to open the physical gate barrier.`;
+  if (lower.includes('admin') || lower.includes('role') || lower.includes('permission') || lower.includes('user')) {
+    return `🔐 **User Role & Session Info**:
+You are currently authenticated as **${userName}** (\`${userRole}\`).
+• **Organizers**: Full event operations, guest management, and gate scanning.
+• **Venue Owners**: Portal management for facilities and booking approvals.
+• **System Admins**: Master password protected gate at \`/admin\` for platform governance.`;
   }
 
-  // 8. Role & Admin Permissions
-  if (lower.includes('admin') || lower.includes('permission') || lower.includes('role') || lower.includes('logout') || lower.includes('session')) {
-    return `🔐 **Role-Based Access Control (RBAC)**:
-You are currently logged in as **${userName}** (${userRole.toUpperCase()}).
-• **Event Hosts (Organizers)**: Full control over guest lists, check-ins, walk-ins, and venue bookings.
-• **Venue Owners**: Manage facility availability, review incoming booking requests, and set hourly pricing.
-• **System Admins**: Accessed via \`/admin\` master password gate for platform governance, telemetry, and revenue monitoring.`;
-  }
+  // Generative Fallback for general questions
+  return `I understand you are asking about **"${q}"**.
 
-  // 9. Conversational AI Fallback for General Knowledge & Questions
-  return `That's a great question! Regarding **"${q}"**:
+As your **Gatehouse AI Assistant**, I can help you analyze **${eventName}** logistics, troubleshoot turnstile scanner cameras, recover guest passes, or process bulk attendee spreadsheets.
 
-In the context of event operations for **${eventName}**, Gatehouse ensures your access workflows, turnstile gates, and attendee data stay synchronized and secure. 
-
-If you need specific help with:
-1. **Pass Recovery** for attendees (\`/my-passes\`)
-2. **Bulk Spreadsheet Import** (.xlsx / .csv)
-3. **Turnstile Gate Camera Setup** (\`/checkin\`)
-4. **Venue Bookings & Analytics**
-
-Feel free to ask me anything specific, and I'll guide you step-by-step! 😊`;
+What specific workflow would you like me to guide you through?`;
 }

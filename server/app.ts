@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
@@ -873,24 +874,47 @@ app.get("/api/checkin-logs", requireAuth, async (req, res) => {
   }
 });
 
-// ---------------- ADMIN DATA PURGE (FRESH CLEAN SYSTEM) ----------------
+// ---------------- MUSA AI ASSISTANT ENDPOINT (GEMINI AI INTEGRATION) ----------------
 
-app.post("/api/admin/purge-data", requireAuth, requireRole(["admin"]), async (req, res) => {
+app.post("/api/musa/chat", async (req, res) => {
   try {
-    await prisma.checkinLog.deleteMany({});
-    await prisma.guest.deleteMany({});
-    await prisma.delegation.deleteMany({});
-    await prisma.booking.deleteMany({});
-    await prisma.event.deleteMany({});
-    await prisma.eventCentre.deleteMany({});
-    await prisma.user.deleteMany({});
+    const { prompt, context } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt is required" });
+    }
 
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+
+    if (apiKey) {
+      const ai = new GoogleGenAI({ apiKey });
+      const systemInstruction = `You are Musa, the Gatehouse AI Security & Access Operations Assistant.
+You are articulate, warm, highly intelligent, rational, and helpful. Speak like a modern conversational AI assistant.
+Gatehouse Platform Context:
+- Active Event: ${context?.activeEvent?.name || "Grand Tech Summit 2026"} (Date: ${context?.activeEvent?.date || "October 24, 2026"}, Time: ${context?.activeEvent?.startTime || "09:00 AM"}, Capacity: ${context?.activeEvent?.capacity || 1000})
+- Registered Guests: ${context?.guestsCount || 450}, Checked-In: ${context?.checkedInCount || 180}
+- Current User: ${context?.currentUser?.name || "User"} (Role: ${context?.currentUser?.role || "organizer"})
+- Features: HMAC-SHA256 QR Tokens (GH1 prefix), Turnstile WebRTC camera scanner, Excel/CSV spreadsheet imports, Guest Pass Recovery (/my-passes), Venue Booking Portal (/centres).
+
+Always answer directly, thoughtfully, and rationally. Use formatting (bolding, bullet points) when helpful.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          { role: "user", parts: [{ text: `${systemInstruction}\n\nUser Question: ${prompt}` }] }
+        ],
+      });
+
+      const reply = response.text || "I am processing your request for Gatehouse access management.";
+      return res.json({ reply });
+    }
+
+    // Fallback if no API key present
     res.json({
-      success: true,
-      message: "All users and platform records erased. System clean.",
+      reply: `I am Musa AI. Regarding your query about "${prompt}": Gatehouse is operating live. You can manage check-ins via turnstile scanner, import Excel guest lists, or recover passes at /my-passes.`
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error("Musa AI API error:", err);
+    res.status(500).json({ error: "Musa AI processing error: " + err.message });
   }
 });
 

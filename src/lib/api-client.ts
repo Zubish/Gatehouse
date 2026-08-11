@@ -67,4 +67,11 @@ export const api = {
 
   // Admin
   purgeData: () => fetchApi<{ success: boolean; message: string }>('/api/admin/purge-data', { method: 'POST' }),
+
+  // Musa AI
+  musaChat: (prompt: string, context?: any) =>
+    fetchApi<{ reply: string }>('/api/musa/chat', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, context }),
+    }),
 };
