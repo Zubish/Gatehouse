@@ -151,6 +151,21 @@ export function requireRole(allowedRoles: string[]) {
   };
 }
 
+// ---------------- PII REDACTION HELPERS ----------------
+function maskEmail(email?: string) {
+  if (!email) return "redacted";
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "redacted";
+  const visible = local.length > 1 ? local[0] : "*";
+  return `${visible}***@${domain}`;
+}
+
+function maskPhone(phone?: string) {
+  if (!phone) return "redacted";
+  // keep last 4 digits, mask the rest
+  return phone.replace(/\d(?=\d{4})/g, "*");
+}
+
 // ---------------- HEALTH CHECK ----------------
 
 app.get("/api/health", (req, res) => {
@@ -876,27 +891,25 @@ app.get("/api/checkin-logs", requireAuth, async (req, res) => {
 
 // ---------------- MUSA AI ASSISTANT ENDPOINT (SECURE GATEHOUSE DATA EXPOSURE & GEMINI INTEGRATION) ----------------
 
-app.post("/api/musa/chat", async (req, res) => {
+// NOTE: Security hardening applied: requireAuth + role check + PII redaction + audit logging
+app.post("/api/musa/chat", requireAuth, requireRole(["admin", "organizer"]), async (req, res) => {
   try {
     const { prompt, context } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
-    // Extract token if user is logged in
+    // Determine authUser from req.user (requireAuth ensures presence)
     let authUser: any = null;
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
+    if ((req as AuthRequest).user) {
       try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        authUser = await prisma.user.findUnique({ where: { id: decoded.userId } });
+        authUser = await prisma.user.findUnique({ where: { id: (req as AuthRequest).user!.userId } });
       } catch (e) {
-        // Token optional for public inquiries
+        // If lookup fails, keep authUser null — we still enforce role earlier
       }
     }
 
-    // 1. SECURE DATABASE TELEMETRY AGGREGATION
+    // 1. SECURE DATABASE TELEMETRY AGGREGATION (PII REDACTED)
     let dbContextSummary = "";
     let activeEventId = context?.activeEvent?.id;
 
@@ -949,50 +962,43 @@ app.post("/api/musa/chat", async (req, res) => {
         take: 5,
       });
 
-      // Sanitized Security Context String
-      dbContextSummary = `
-[EXPOSED SECURE GATEHOUSE TELEMETRY FOR USER: ${authUser.name} (${authUser.role.toUpperCase()})]
-- Email: ${authUser.email}
-- Managed Events Count: ${userEvents.length}
-- Active Event Name: "${context?.activeEvent?.name || userEvents[0]?.name || "N/A"}" (ID: ${activeEventId || "N/A"})
-- Active Event Capacity: ${context?.activeEvent?.capacity || userEvents[0]?.capacity || 1000}
-- Active Event Registered Guests: ${totalGuests}
-- Active Event Checked-In Count: ${checkedInCount} (${totalGuests ? Math.round((checkedInCount / totalGuests) * 100) : 0}% check-in rate)
-- Guest Categories Breakdown: ${JSON.stringify(categoryBreakdown)}
-- User Venue Bookings: ${userBookings.length} total (${pendingBookings} pending, ${approvedBookings} approved)
-- Recent Check-in Logs Count: ${recentLogs.length} recent turnstile scans`;
+      // Sanitized Security Context String (PII REDACTED)
+      dbContextSummary = `\n[EXPOSED SECURE GATEHOUSE TELEMETRY FOR USER ROLE: ${authUser.role.toUpperCase()}]\n` +
+        `- Requesting User (masked): ${maskEmail(authUser.email)}\n` +
+        `- Managed Events Count: ${userEvents.length}\n` +
+        `- Active Event Name: "${context?.activeEvent?.name || userEvents[0]?.name || "N/A"}"\n` +
+        `- Active Event Capacity: ${context?.activeEvent?.capacity || userEvents[0]?.capacity || 1000}\n` +
+        `- Active Event Registered Guests: ${totalGuests}\n` +
+        `- Active Event Checked-In Count: ${checkedInCount} (${totalGuests ? Math.round((checkedInCount / totalGuests) * 100) : 0}% check-in rate)\n` +
+        `- Guest Categories Breakdown: ${JSON.stringify(categoryBreakdown)}\n` +
+        `- User Venue Bookings: ${userBookings.length} total (${pendingBookings} pending, ${approvedBookings} approved)\n` +
+        `- Recent Check-in Logs Count: ${recentLogs.length} recent turnstile scans`;
     } else {
-      dbContextSummary = `
-[PUBLIC GUEST CONTEXT]
-- Active Event: ${context?.activeEvent?.name || "Grand Tech Summit 2026"}
-- Registered Guests: ${context?.guestsCount || 0}
-- Checked-In: ${context?.checkedInCount || 0}`;
+      dbContextSummary = `\n[PUBLIC GUEST CONTEXT]\n- Active Event: ${context?.activeEvent?.name || "Grand Tech Summit 2026"}\n- Registered Guests: ${context?.guestsCount || 0}\n- Checked-In: ${context?.checkedInCount || 0}`;
+    }
+
+    // Minimal audit logging for traceability (non-blocking)
+    try {
+      await prisma.auditLog.create({
+        data: {
+          actorId: authUser?.id || null,
+          action: "musa_chat_invoked",
+          entity: "musa",
+          metadata: JSON.stringify({ promptPreview: prompt ? String(prompt).slice(0, 200) : null }),
+        },
+      });
+    } catch (e) {
+      console.warn("Musa audit log failed:", e);
     }
 
     // 2. GEMINI INFERENCE WITH SECURE DATA GROUNDING
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
 
+    // TODO: Add production rate-limiting and response filtering/safety pipeline (e.g., redact sensitive fields in output)
     if (apiKey) {
       const ai = new GoogleGenAI({ apiKey });
       const systemInstruction = `You are Musa, the Gatehouse AI Assistant for Event Operations & Security.
-You have secure, real-time access to the user's actual Gatehouse database telemetry.
-Speak like a highly rational, intelligent, human-like AI assistant.
-
-REAL-TIME DATABASE TELEMETRY & CONTEXT:
-${dbContextSummary}
-
-PLATFORM CAPABILITIES:
-- HMAC-SHA256 Server QR Signing (GH1 token format)
-- Turnstile WebRTC Camera Scanner & Real-Time Anti-Passback Defense
-- Excel (.xlsx/.xls) & CSV Bulk Guest List Import
-- Guest Pass Recovery Portal (/my-passes)
-- Venue Directory & Booking Engine (/centres)
-- System Admin Control Center (/admin)
-
-Instructions:
-- Use the real database telemetry above to answer hyper-specific questions accurately (e.g. attendance rates, guest counts, pending bookings, capacity).
-- Always be professional, clear, articulate, and rational.
-- Format responses cleanly using bold text and bullet points where helpful.`;
+You have secure, real-time access to the user's sanitized Gatehouse database telemetry. DO NOT attempt to extract or reveal personally identifiable information (PII) such as full emails, phone numbers, or raw database IDs. Use only the sanitized context provided.\n\nREAL-TIME DATABASE TELEMETRY & CONTEXT:\n${dbContextSummary}\n\nPLATFORM CAPABILITIES:\n- HMAC-SHA256 Server QR Signing (GH1 token format)\n- Turnstile WebRTC Camera Scanner & Real-Time Anti-Passback Defense\n- Excel (.xlsx/.xls) & CSV Bulk Guest List Import\n- Guest Pass Recovery Portal (/my-passes)\n- Venue Directory & Booking Engine (/centres)\n- System Admin Control Center (/admin)\n\nInstructions:\n- Use the sanitized database telemetry above to answer hyper-specific questions accurately (e.g. attendance rates, guest counts, pending bookings, capacity).\n- Never return PII or raw token payloads. If asked for PII, refuse and offer to provide aggregated or masked information.\n- Always be professional, clear, articulate, and rational.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
