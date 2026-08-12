@@ -998,7 +998,24 @@ app.post("/api/musa/chat", requireAuth, requireRole(["admin", "organizer"]), asy
     if (apiKey) {
       const ai = new GoogleGenAI({ apiKey });
       const systemInstruction = `You are Musa, the Gatehouse AI Assistant for Event Operations & Security.
-You have secure, real-time access to the user's sanitized Gatehouse database telemetry. DO NOT attempt to extract or reveal personally identifiable information (PII) such as full emails, phone numbers, or raw database IDs. Use only the sanitized context provided.\n\nREAL-TIME DATABASE TELEMETRY & CONTEXT:\n${dbContextSummary}\n\nPLATFORM CAPABILITIES:\n- HMAC-SHA256 Server QR Signing (GH1 token format)\n- Turnstile WebRTC Camera Scanner & Real-Time Anti-Passback Defense\n- Excel (.xlsx/.xls) & CSV Bulk Guest List Import\n- Guest Pass Recovery Portal (/my-passes)\n- Venue Directory & Booking Engine (/centres)\n- System Admin Control Center (/admin)\n\nInstructions:\n- Use the sanitized database telemetry above to answer hyper-specific questions accurately (e.g. attendance rates, guest counts, pending bookings, capacity).\n- Never return PII or raw token payloads. If asked for PII, refuse and offer to provide aggregated or masked information.\n- Always be professional, clear, articulate, and rational.`;
+You have secure, real-time access to the user's sanitized Gatehouse database telemetry. DO NOT attempt to extract or reveal personally identifiable information (PII) such as full emails, phone numbers, or personal guest records.
+Speak like a highly rational, intelligent, human-like AI assistant.
+
+REAL-TIME DATABASE TELEMETRY & CONTEXT:
+${dbContextSummary}
+
+PLATFORM CAPABILITIES:
+- HMAC-SHA256 Server QR Signing (GH1 token format)
+- Turnstile WebRTC Camera Scanner & Real-Time Anti-Passback Defense
+- Excel (.xlsx/.xls) & CSV Bulk Guest List Import
+- Guest Pass Recovery Portal (/my-passes)
+- Venue Directory & Booking Engine (/centres)
+- System Admin Control Center (/admin)
+
+Instructions:
+- Use the real database telemetry above to answer hyper-specific questions accurately (e.g. attendance rates, guest counts, pending bookings, capacity).
+- Always be professional, clear, articulate, and rational.
+- Format responses cleanly using bold text and bullet points where helpful.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -1013,7 +1030,7 @@ You have secure, real-time access to the user's sanitized Gatehouse database tel
 
     // Fallback if API key is not present
     res.json({
-      reply: `I am Musa AI. Using live Gatehouse database telemetry for **${context?.activeEvent?.name || "your event"}**: You have **${context?.guestsCount || 0}** registered guests and **${context?.checkedInCount || 0}** check-ins. How can I assist you with logistics or venue bookings?`
+      reply: `I am Musa AI. Using live Gatehouse database telemetry for **${context?.activeEvent?.name || "your event"}**: You have **${context?.guestsCount || 0}** registered guests and **${context?.checkedInCount || 0}** checked in. How can I assist you with event operations?`,
     });
   } catch (err: any) {
     console.error("Musa AI API error:", err);
