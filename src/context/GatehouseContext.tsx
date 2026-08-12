@@ -194,11 +194,14 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const loginUser = async (email: string, password = ''): Promise<{ success: boolean; role?: UserRole }> => {
     try {
       const data = await api.login({ email, password });
-      localStorage.setItem('gatehouse_auth_token', data.token);
-      setAuthToken(data.token);
-      setCurrentUser(data.user);
-      setUserRole(data.user.role);
-      return { success: true, role: data.user.role };
+      if (data && (data as any).token) {
+        localStorage.setItem('gatehouse_auth_token', (data as any).token);
+        setAuthToken((data as any).token);
+        setCurrentUser((data as any).user);
+        setUserRole((data as any).user?.role);
+        return { success: true, role: (data as any).user?.role };
+      }
+      throw new Error('Login returned no data');
     } catch (e) {
       console.error('API login unavailable:', e);
     }
@@ -237,16 +240,23 @@ export const GatehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const adminLoginPassword = async (password: string): Promise<boolean> => {
     try {
       const data = await api.adminLogin(password);
-      localStorage.setItem('gatehouse_auth_token', data.token);
-      setAuthToken(data.token);
-      setCurrentUser(data.user);
-      setUserRole(data.user.role);
-      return true;
+      if (data && (data as any).token) {
+        localStorage.setItem('gatehouse_auth_token', (data as any).token);
+        setAuthToken((data as any).token);
+        setCurrentUser((data as any).user);
+        setUserRole((data as any).user?.role);
+        return true;
+      }
+      throw new Error('Admin login returned no data');
     } catch (e) {
       console.error('API admin login unavailable:', e);
     }
 
-    const validMasterPasswords = ['gatehouse2026', 'admin123', 'admin', 'password123'];
+    const envPasswords = import.meta.env.VITE_ADMIN_PASSWORDS || '';
+    const validMasterPasswords = envPasswords
+      ? envPasswords.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : ['gatehouse2026', 'admin123'];
+
     if (validMasterPasswords.includes(password.trim())) {
       const mockAdminUser: User = {
         id: 'admin_sys_1',

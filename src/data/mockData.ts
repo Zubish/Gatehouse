@@ -5,7 +5,7 @@ import type {
   Delegation,
   Guest,
 } from "../types";
-import { signQrToken } from "../utils/qrGenerator";
+// Note: mock data uses guest `code` as `qrPayload` for demo flows
 
 export const MOCK_EVENT_CENTRES: EventCentre[] = [
   {
@@ -138,7 +138,7 @@ export const MOCK_INITIAL_GUESTS: Guest[] = [
     category: "VIP",
     source: "organizer",
     code: "EVT-TBK88",
-    qrPayload: signQrToken("evt_bloom", "g1", "EVT-TBK88"),
+    qrPayload: "EVT-TBK88",
     status: "out",
     checkinTime: null,
   },
@@ -151,7 +151,7 @@ export const MOCK_INITIAL_GUESTS: Guest[] = [
     category: "Regular",
     source: "organizer",
     code: "EVT-AMC12",
-    qrPayload: signQrToken("evt_bloom", "g2", "EVT-AMC12"),
+    qrPayload: "EVT-AMC12",
     status: "out",
     checkinTime: null,
   },
@@ -164,7 +164,7 @@ export const MOCK_INITIAL_GUESTS: Guest[] = [
     category: "Regular",
     source: "self_registered",
     code: "EVT-IFN44",
-    qrPayload: signQrToken("evt_bloom", "g3", "EVT-IFN44"),
+    qrPayload: "EVT-IFN44",
     status: "out",
     checkinTime: null,
   },
@@ -177,7 +177,7 @@ export const MOCK_INITIAL_GUESTS: Guest[] = [
     category: "VIP",
     source: "centre_import",
     code: "EVT-SEG99",
-    qrPayload: signQrToken("evt_bloom", "g4", "EVT-SEG99"),
+    qrPayload: "EVT-SEG99",
     status: "out",
     checkinTime: null,
   },

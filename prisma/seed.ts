@@ -1,17 +1,23 @@
 import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
 function signQrToken(eventId: string, guestId: string, code: string): string {
-  const secret = 'GATEHOUSE-HMAC-SECURE-KEY-2026';
-  const raw = `${eventId}:${guestId}:${code}:${secret}`;
-  let hash = 0;
-  for (let i = 0; i < raw.length; i++) {
-    hash = (hash << 5) - hash + raw.charCodeAt(i);
-    hash |= 0;
-  }
-  const signature = Math.abs(hash).toString(36).toUpperCase();
-  return JSON.stringify({ e: eventId, g: guestId, c: code, sig: signature });
+  const secret = process.env.QR_SIGNING_SECRET || 'GATEHOUSE-HMAC-SECURE-KEY-2026';
+
+  const payload = {
+    v: 1,
+    eventId,
+    guestId,
+    code,
+    iat: Math.floor(Date.now() / 1000),
+  };
+
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', secret).update(payloadB64).digest('base64url');
+
+  return `GH1.${payloadB64}.${signature}`;
 }
 
 async function main() {
